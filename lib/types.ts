@@ -205,9 +205,27 @@ export interface NextAction {
   createdAt: string;
 }
 
-export interface RepProfile {
+/** 利用者の役割。admin はメンバーの追加・無効化ができる。 */
+export type UserRole = 'admin' | 'member';
+
+export const USER_ROLE_LABEL: Record<UserRole, string> = {
+  admin: '管理者',
+  member: 'メンバー',
+};
+
+/**
+ * 利用者（営業担当者）。
+ * passwordHash はサーバー内部だけで扱う。クライアントへ返すときは必ず toPublicUser() を通す。
+ */
+export interface User {
   id: string;
+  email: string;
+  /** scrypt$<salt>$<hash> 形式。 */
+  passwordHash: string;
   name: string;
+  role: UserRole;
+  /** 退職・異動時は false にして残す（過去の商談記録との紐付けを壊さないため）。 */
+  active: boolean;
   /** 営業経験年数。 */
   experienceYears: number;
   /** 担当商材。 */
@@ -219,6 +237,25 @@ export interface RepProfile {
   tendencies: Tendency[];
   createdAt: string;
   updatedAt: string;
+  lastLoginAt?: string;
+}
+
+/** クライアントへ渡してよい利用者情報。 */
+export type PublicUser = Omit<User, 'passwordHash'>;
+
+export function toPublicUser(user: User): PublicUser {
+  const { passwordHash: _passwordHash, ...rest } = user;
+  return rest;
+}
+
+/** ログインセッション。トークンそのものは保存せず、ハッシュだけを持つ。 */
+export interface AuthSession {
+  id: string;
+  tokenHash: string;
+  userId: string;
+  createdAt: string;
+  expiresAt: string;
+  lastSeenAt: string;
 }
 
 export type KnowledgeType = 'product' | 'rule' | 'case' | 'talk';
@@ -236,6 +273,8 @@ export interface Knowledge {
   title: string;
   body: string;
   tags: string[];
+  /** 登録者。削除の権限判定に使う。 */
+  createdBy?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -1,16 +1,28 @@
 import { NextResponse } from 'next/server';
 
-import { createCustomer, getDefaultRep, listCustomers } from '@/lib/repo';
+import { handleError } from '@/lib/api';
+import { requireUser } from '@/lib/auth';
+import { createCustomer, listCustomers } from '@/lib/repo';
 
 export const dynamic = 'force-dynamic';
 
+/** 顧客カルテはチーム全員で共有する。 */
 export async function GET() {
-  return NextResponse.json(await listCustomers());
+  try {
+    await requireUser();
+    return NextResponse.json(await listCustomers());
+  } catch (err) {
+    return handleError(err);
+  }
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as { displayName?: string };
-  const rep = await getDefaultRep();
-  const customer = await createCustomer((body.displayName ?? '').trim(), rep.id);
-  return NextResponse.json(customer, { status: 201 });
+  try {
+    const user = await requireUser();
+    const body = (await request.json()) as { displayName?: string; ownerRepId?: string };
+    const customer = await createCustomer((body.displayName ?? '').trim(), body.ownerRepId || user.id);
+    return NextResponse.json(customer, { status: 201 });
+  } catch (err) {
+    return handleError(err);
+  }
 }

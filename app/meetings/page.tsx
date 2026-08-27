@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { api, jsonBody, today } from '@/lib/client';
-import type { Customer, Meeting, MeetingInputType } from '@/lib/types';
+import type { Customer, Meeting, MeetingInputType, PublicUser } from '@/lib/types';
 
 const INPUT_TYPES: Array<{ value: MeetingInputType; label: string }> = [
   { value: 'memo', label: '商談メモ' },
@@ -19,6 +19,8 @@ export default function MeetingsPage() {
   const router = useRouter();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [users, setUsers] = useState<PublicUser[]>([]);
+  const [me, setMe] = useState<PublicUser | null>(null);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -32,10 +34,17 @@ export default function MeetingsPage() {
   });
 
   const load = () => {
-    Promise.all([api<Customer[]>('/api/customers'), api<Meeting[]>('/api/meetings')])
-      .then(([c, m]) => {
+    Promise.all([
+      api<Customer[]>('/api/customers'),
+      api<Meeting[]>('/api/meetings'),
+      api<PublicUser[]>('/api/users'),
+      api<PublicUser>('/api/me'),
+    ])
+      .then(([c, m, u, current]) => {
         setCustomers(c);
         setMeetings(m);
+        setUsers(u);
+        setMe(current);
       })
       .catch((err: Error) => setError(err.message));
   };
@@ -79,18 +88,24 @@ export default function MeetingsPage() {
 
   const remove = async (id: string) => {
     if (!confirm('この商談記録を削除しますか？')) return;
-    await api(`/api/meetings/${id}`, { method: 'DELETE' });
-    load();
+    try {
+      await api(`/api/meetings/${id}`, { method: 'DELETE' });
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '削除に失敗しました。');
+    }
   };
 
   const customerName = (id: string) => customers.find((c) => c.id === id)?.displayName ?? '（削除済み）';
+  const userName = (id: string) => users.find((u) => u.id === id)?.name ?? '（不明）';
 
   return (
     <div className="page">
       <div className="page-head">
         <h1 className="page-title">商談を記録</h1>
         <p className="page-desc">
-          メモや文字起こしをそのまま貼り付けてください。記録した内容はAIの振り返りと次回準備に使われます。
+          メモや文字起こしをそのまま貼り付けてください。記録はチーム全員が閲覧でき、
+          AIの振り返りと次回準備に使われます。
         </p>
       </div>
 
@@ -193,6 +208,7 @@ export default function MeetingsPage() {
               <tr>
                 <th>日付</th>
                 <th>顧客</th>
+                <th>担当者</th>
                 <th>商談</th>
                 <th>段階</th>
                 <th>結果</th>
@@ -204,13 +220,16 @@ export default function MeetingsPage() {
                 <tr key={meeting.id}>
                   <td>{meeting.date}</td>
                   <td>{customerName(meeting.customerId)}</td>
+                  <td className="owner-tag">{userName(meeting.repId)}</td>
                   <td>{meeting.title}</td>
                   <td>{meeting.stage || '—'}</td>
                   <td>{meeting.outcome || '—'}</td>
                   <td>
-                    <button type="button" className="btn-danger btn-sm" onClick={() => remove(meeting.id)}>
-                      削除
-                    </button>
+                    {(meeting.repId === me?.id || me?.role === 'admin') && (
+                      <button type="button" className="btn-danger btn-sm" onClick={() => remove(meeting.id)}>
+                        削除
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

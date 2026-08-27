@@ -7,7 +7,7 @@ import {
   SKILL_AXIS_LABEL,
   TENDENCY_CATEGORY_LABEL,
 } from './types';
-import type { Customer, Knowledge, Meeting, NextAction, RepProfile } from './types';
+import type { Customer, Knowledge, Meeting, NextAction, User } from './types';
 
 /**
  * 保存済みデータをプロンプトの参照情報に変換する。
@@ -23,7 +23,7 @@ function truncate(text: string, limit: number): string {
   return `${text.slice(0, limit)}\n…（以下省略：全${text.length}文字）`;
 }
 
-export function formatRep(rep: RepProfile | undefined): string {
+export function formatRep(rep: User | undefined): string {
   if (!rep) return '未登録';
   const lines = [
     `氏名: ${rep.name}`,
@@ -35,7 +35,7 @@ export function formatRep(rep: RepProfile | undefined): string {
   return lines.join('\n');
 }
 
-export function formatTendencies(rep: RepProfile | undefined): string {
+export function formatTendencies(rep: User | undefined): string {
   if (!rep || rep.tendencies.length === 0) {
     return '過去の傾向データなし（この会話が初回分析の場合、信頼度は「低」として扱うこと）';
   }
@@ -108,7 +108,7 @@ export function formatNextActions(actions: NextAction[]): string {
 }
 
 export interface ContextInput {
-  rep?: RepProfile;
+  rep?: User;
   customer?: Customer;
   meetings: Meeting[];
   knowledge: Knowledge[];

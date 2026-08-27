@@ -1,27 +1,37 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { api, jsonBody, patchBody, today } from '@/lib/client';
-import type { Customer, NextAction } from '@/lib/types';
+import type { Customer, NextAction, PublicUser } from '@/lib/types';
 
 /** 次回行動の管理。AIの提案は保存候補を承認したときにここへ入る。 */
 export default function ActionsPage() {
   const [actions, setActions] = useState<NextAction[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [users, setUsers] = useState<PublicUser[]>([]);
+  const [me, setMe] = useState<PublicUser | null>(null);
+  const [scope, setScope] = useState<'mine' | 'team'>('mine');
   const [error, setError] = useState('');
   const [form, setForm] = useState({ action: '', purpose: '', due: today(), customerId: '' });
 
-  const load = () => {
-    Promise.all([api<NextAction[]>('/api/next-actions'), api<Customer[]>('/api/customers')])
-      .then(([a, c]) => {
+  const load = useCallback(() => {
+    Promise.all([
+      api<NextAction[]>(`/api/next-actions${scope === 'team' ? '?scope=team' : ''}`),
+      api<Customer[]>('/api/customers'),
+      api<PublicUser[]>('/api/users'),
+      api<PublicUser>('/api/me'),
+    ])
+      .then(([a, c, u, current]) => {
         setActions(a);
         setCustomers(c);
+        setUsers(u);
+        setMe(current);
       })
       .catch((err: Error) => setError(err.message));
-  };
+  }, [scope]);
 
-  useEffect(load, []);
+  useEffect(load, [load]);
 
   const add = async () => {
     if (!form.action.trim()) return;
@@ -35,14 +45,25 @@ export default function ActionsPage() {
   };
 
   const toggle = async (action: NextAction) => {
-    await api(`/api/next-actions/${action.id}`, patchBody({ done: !action.done }));
-    load();
+    try {
+      await api(`/api/next-actions/${action.id}`, patchBody({ done: !action.done }));
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '更新に失敗しました。');
+    }
   };
 
   const remove = async (id: string) => {
-    await api(`/api/next-actions/${id}`, { method: 'DELETE' });
-    load();
+    try {
+      await api(`/api/next-actions/${id}`, { method: 'DELETE' });
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '削除に失敗しました。');
+    }
   };
+
+  const userName = (id: string) => users.find((u) => u.id === id)?.name ?? '（不明）';
+  const canEdit = (action: NextAction) => action.repId === me?.id || me?.role === 'admin';
 
   const open = actions.filter((a) => !a.done);
   const done = actions.filter((a) => a.done);
@@ -55,6 +76,15 @@ export default function ActionsPage() {
         <p className="page-desc">担当者・期限・目的をセットで管理します。相談画面で承認した提案もここに入ります。</p>
       </div>
 
+      <div className="tabs">
+        <button type="button" className="tab" data-active={scope === 'mine'} onClick={() => setScope('mine')}>
+          自分の行動
+        </button>
+        <button type="button" className="tab" data-active={scope === 'team'} onClick={() => setScope('team')}>
+          チーム全体
+        </button>
+      </div>
+
       <div className="card">
         <h2 className="card-title">未完了（{open.length}件）</h2>
         {open.length === 0 ? (
@@ -62,10 +92,16 @@ export default function ActionsPage() {
         ) : (
           open.map((action) => (
             <div key={action.id} className="checkline">
-              <input type="checkbox" checked={false} onChange={() => toggle(action)} />
+              <input
+                type="checkbox"
+                checked={false}
+                disabled={!canEdit(action)}
+                onChange={() => toggle(action)}
+              />
               <span style={{ flex: 1 }}>
                 {action.action}
                 <div className="faint">
+                  {scope === 'team' && `担当: ${userName(action.repId)} ／ `}
                   目的: {action.purpose || '未記載'} ／ 期限:{' '}
                   <span style={overdue(action.due) ? { color: 'var(--danger)', fontWeight: 600 } : undefined}>
                     {action.due || '未設定'}
@@ -75,9 +111,11 @@ export default function ActionsPage() {
                     ` ／ 顧客: ${customers.find((c) => c.id === action.customerId)?.displayName ?? '（削除済み）'}`}
                 </div>
               </span>
-              <button type="button" className="btn-danger btn-sm" onClick={() => remove(action.id)}>
-                削除
-              </button>
+              {canEdit(action) && (
+                <button type="button" className="btn-danger btn-sm" onClick={() => remove(action.id)}>
+                  削除
+                </button>
+              )}
             </div>
           ))
         )}

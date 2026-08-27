@@ -9,61 +9,106 @@ import type {
   Meeting,
   Message,
   NextAction,
-  RepProfile,
   Session,
   UpdateProposal,
+  User,
+  UserRole,
 } from './types';
 import type { ExtractedUpdate } from './extract';
 
 /** アプリ内で共有するデータ操作。API ルートからはこの層だけを呼ぶ。 */
 
-const DEFAULT_REP_ID = 'rep-default';
+// --- 利用者 -----------------------------------------------------------------
 
-/** 単一利用者を想定した既定の担当者。存在しなければ作成する。 */
-export async function getDefaultRep(): Promise<RepProfile> {
-  const existing = await findById('reps', DEFAULT_REP_ID);
-  if (existing) return existing;
-  return mutate('reps', (rows) => {
-    const found = rows.find((r) => r.id === DEFAULT_REP_ID);
-    if (found) return found;
-    const rep: RepProfile = {
-      id: DEFAULT_REP_ID,
-      name: '営業担当者',
-      experienceYears: 0,
-      product: '',
-      territory: '',
-      note: '',
+export async function listUsers(): Promise<User[]> {
+  const rows = await readAll('users');
+  return rows.sort(
+    (a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name, 'ja'),
+  );
+}
+
+export async function getUser(id: string): Promise<User | undefined> {
+  return findById('users', id);
+}
+
+export async function findUserByEmail(email: string): Promise<User | undefined> {
+  const rows = await readAll('users');
+  return rows.find((row) => row.email === email);
+}
+
+export interface NewUser {
+  email: string;
+  name: string;
+  passwordHash: string;
+  role: UserRole;
+  experienceYears?: number;
+  product?: string;
+  territory?: string;
+  note?: string;
+}
+
+/**
+ * 利用者を追加する。メールアドレスの重複はここで弾く。
+ * 既存の担当者IDを引き継ぎたい場合は adoptId を渡す（初期セットアップ時の移行用）。
+ */
+export async function createUser(input: NewUser, adoptId?: string): Promise<User> {
+  return mutate('users', (rows) => {
+    if (rows.some((row) => row.email === input.email)) {
+      throw new Error('このメールアドレスは既に登録されています。');
+    }
+    const user: User = {
+      id: adoptId ?? newId(),
+      email: input.email,
+      passwordHash: input.passwordHash,
+      name: input.name,
+      role: input.role,
+      active: true,
+      experienceYears: input.experienceYears ?? 0,
+      product: input.product ?? '',
+      territory: input.territory ?? '',
+      note: input.note ?? '',
       tendencies: [],
       createdAt: now(),
       updatedAt: now(),
     };
-    rows.push(rep);
-    return rep;
+    rows.push(user);
+    return user;
   });
 }
 
-export async function updateRep(
-  repId: string,
-  patch: Partial<Pick<RepProfile, 'name' | 'experienceYears' | 'product' | 'territory' | 'note'>>,
-): Promise<RepProfile | undefined> {
-  return mutate('reps', (rows) => {
-    const rep = rows.find((r) => r.id === repId);
-    if (!rep) return undefined;
-    Object.assign(rep, patch, { updatedAt: now() });
-    return rep;
+export async function updateUser(
+  id: string,
+  patch: Partial<
+    Pick<
+      User,
+      'name' | 'experienceYears' | 'product' | 'territory' | 'note' | 'role' | 'active' | 'passwordHash' | 'lastLoginAt'
+    >
+  >,
+): Promise<User | undefined> {
+  return mutate('users', (rows) => {
+    const user = rows.find((row) => row.id === id);
+    if (!user) return undefined;
+    // undefined のキーで既存値を消さない。
+    for (const [key, value] of Object.entries(patch)) {
+      if (value !== undefined) (user as unknown as Record<string, unknown>)[key] = value;
+    }
+    user.updatedAt = now();
+    return user;
   });
 }
 
-export async function deleteTendency(repId: string, tendencyId: string): Promise<boolean> {
-  return mutate('reps', (rows) => {
-    const rep = rows.find((r) => r.id === repId);
-    if (!rep) return false;
-    const before = rep.tendencies.length;
-    rep.tendencies = rep.tendencies.filter((t) => t.id !== tendencyId);
-    rep.updatedAt = now();
-    return rep.tendencies.length !== before;
+export async function deleteTendency(userId: string, tendencyId: string): Promise<boolean> {
+  return mutate('users', (rows) => {
+    const user = rows.find((row) => row.id === userId);
+    if (!user) return false;
+    const before = user.tendencies.length;
+    user.tendencies = user.tendencies.filter((t) => t.id !== tendencyId);
+    user.updatedAt = now();
+    return user.tendencies.length !== before;
   });
 }
+
+// --- 顧客 -------------------------------------------------------------------
 
 export async function listCustomers(): Promise<Customer[]> {
   const rows = await readAll('customers');
@@ -123,6 +168,10 @@ export async function listMeetings(customerId?: string): Promise<Meeting[]> {
   return filtered.sort((a, b) => b.date.localeCompare(a.date));
 }
 
+export async function findMeeting(id: string): Promise<Meeting | undefined> {
+  return findById('meetings', id);
+}
+
 export async function addMeeting(input: Omit<Meeting, 'id' | 'createdAt'>): Promise<Meeting> {
   const meeting: Meeting = { ...input, id: newId(), createdAt: now() };
   await mutate('meetings', (rows) => {
@@ -155,6 +204,10 @@ export async function listKnowledge(): Promise<Knowledge[]> {
   return rows.sort((a, b) => a.type.localeCompare(b.type) || a.title.localeCompare(b.title));
 }
 
+export async function findKnowledge(id: string): Promise<Knowledge | undefined> {
+  return findById('knowledge', id);
+}
+
 export async function addKnowledge(input: Omit<Knowledge, 'id' | 'createdAt' | 'updatedAt'>): Promise<Knowledge> {
   const knowledge: Knowledge = { ...input, id: newId(), createdAt: now(), updatedAt: now() };
   await mutate('knowledge', (rows) => {
@@ -182,11 +235,10 @@ export async function deleteKnowledge(id: string): Promise<void> {
   });
 }
 
-export async function listNextActions(repId: string): Promise<NextAction[]> {
+export async function listNextActions(repId?: string): Promise<NextAction[]> {
   const rows = await readAll('nextActions');
-  return rows
-    .filter((a) => a.repId === repId)
-    .sort((a, b) => Number(a.done) - Number(b.done) || a.due.localeCompare(b.due));
+  const filtered = repId ? rows.filter((a) => a.repId === repId) : rows;
+  return filtered.sort((a, b) => Number(a.done) - Number(b.done) || a.due.localeCompare(b.due));
 }
 
 export async function addNextAction(input: Omit<NextAction, 'id' | 'createdAt'>): Promise<NextAction> {
@@ -195,6 +247,10 @@ export async function addNextAction(input: Omit<NextAction, 'id' | 'createdAt'>)
     rows.push(action);
   });
   return action;
+}
+
+export async function findNextAction(id: string): Promise<NextAction | undefined> {
+  return findById('nextActions', id);
 }
 
 export async function setNextActionDone(id: string, done: boolean): Promise<NextAction | undefined> {

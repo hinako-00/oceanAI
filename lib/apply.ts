@@ -104,7 +104,7 @@ export async function applyProposal(
     .map((index) => proposal.patternUpdates[index])
     .filter(Boolean);
   if (patterns.length > 0) {
-    await mutate('reps', (rows) => {
+    await mutate('users', (rows) => {
       const rep = rows.find((r) => r.id === proposal.repId);
       if (!rep) return;
       for (const pattern of patterns) {

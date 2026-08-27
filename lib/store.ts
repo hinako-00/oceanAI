@@ -4,13 +4,14 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import type {
+  AuthSession,
   Customer,
   Knowledge,
   Meeting,
   NextAction,
-  RepProfile,
   Session,
   UpdateProposal,
+  User,
 } from './types';
 
 /**
@@ -24,11 +25,12 @@ const DATA_DIR = path.resolve(process.cwd(), process.env.DATA_DIR ?? './data');
 interface Schema {
   customers: Customer[];
   meetings: Meeting[];
-  reps: RepProfile[];
+  users: User[];
   knowledge: Knowledge[];
   sessions: Session[];
   proposals: UpdateProposal[];
   nextActions: NextAction[];
+  authSessions: AuthSession[];
 }
 
 type Collection = keyof Schema;
@@ -36,11 +38,12 @@ type Collection = keyof Schema;
 const FILES: Record<Collection, string> = {
   customers: 'customers.json',
   meetings: 'meetings.json',
-  reps: 'reps.json',
+  users: 'users.json',
   knowledge: 'knowledge.json',
   sessions: 'sessions.json',
   proposals: 'proposals.json',
   nextActions: 'next-actions.json',
+  authSessions: 'auth-sessions.json',
 };
 
 /** ファイルごとの書き込みを直列化するためのキュー。読み書きの競合を防ぐ。 */

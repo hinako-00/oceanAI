@@ -6,14 +6,15 @@ import Formatted from './components/Formatted';
 import ProposalPanel from './components/ProposalPanel';
 import { api, jsonBody } from '@/lib/client';
 import { MODE_LABEL } from '@/lib/types';
-import type { Customer, Message, Mode, RepProfile, Session, UpdateProposal } from '@/lib/types';
+import type { Customer, Message, Mode, PublicUser, Session, UpdateProposal } from '@/lib/types';
 
 interface SessionSummary extends Omit<Session, 'messages'> {
   messageCount: number;
 }
 
 interface Bootstrap {
-  rep: RepProfile;
+  user: PublicUser;
+  users: PublicUser[];
   customers: Customer[];
   sessions: SessionSummary[];
   pendingProposals: UpdateProposal[];

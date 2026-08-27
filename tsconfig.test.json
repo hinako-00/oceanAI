@@ -7,8 +7,22 @@
     "moduleResolution": "node",
     "jsx": "react-jsx",
     "incremental": false,
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
-  "include": ["lib/**/*.ts", "tests/**/*.ts"],
-  "exclude": ["node_modules", "app", "lib/store.ts", "lib/repo.ts", "lib/apply.ts", "lib/anthropic.ts"]
+  "include": [
+    "lib/**/*.ts",
+    "tests/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "app",
+    "lib/store.ts",
+    "lib/repo.ts",
+    "lib/apply.ts",
+    "lib/anthropic.ts",
+    "lib/auth.ts",
+    "lib/api.ts"
+  ]
 }

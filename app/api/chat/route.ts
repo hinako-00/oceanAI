@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 
 import { buildSystem, getClient, getMaxTokens, getModel, MissingApiKeyError } from '@/lib/anthropic';
+import { handleError } from '@/lib/api';
+import { requireUser } from '@/lib/auth';
 import { buildContextBlock } from '@/lib/context';
 import { extractUpdate, stripPartialBlock } from '@/lib/extract';
 import { detectMode, makeTitle } from '@/lib/mode';
@@ -9,7 +11,6 @@ import {
   appendMessages,
   createSession,
   getCustomer,
-  getDefaultRep,
   getSession,
   listKnowledge,
   listMeetings,
@@ -50,6 +51,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'メッセージが空です。' }, { status: 400 });
   }
 
+  let rep;
+  try {
+    rep = await requireUser();
+  } catch (err) {
+    return handleError(err);
+  }
+
   let client;
   try {
     client = getClient();
@@ -60,10 +68,10 @@ export async function POST(request: Request) {
     throw err;
   }
 
-  const rep = await getDefaultRep();
-
   // --- セッションの解決 ---
-  let session = body.sessionId ? await getSession(body.sessionId) : undefined;
+  // 他のメンバーの相談は開けない。IDを直接指定されても自分のものだけを扱う。
+  const requested = body.sessionId ? await getSession(body.sessionId) : undefined;
+  let session = requested && requested.repId === rep.id ? requested : undefined;
   if (!session) {
     session = await createSession({
       repId: rep.id,

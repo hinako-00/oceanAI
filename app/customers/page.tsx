@@ -1,21 +1,32 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { api, formatDate, jsonBody } from '@/lib/client';
 import { CUSTOMER_FIELD_LABEL, FACT_SOURCE_LABEL } from '@/lib/types';
-import type { Customer } from '@/lib/types';
+import type { Customer, PublicUser } from '@/lib/types';
 
-/** 顧客カルテの一覧。要約として中心課題と温度感を出す。 */
+/** 顧客カルテの一覧。チーム全員の顧客を表示し、担当者で絞り込める。 */
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [users, setUsers] = useState<PublicUser[]>([]);
+  const [me, setMe] = useState<PublicUser | null>(null);
   const [name, setName] = useState('');
+  const [ownerFilter, setOwnerFilter] = useState('all');
   const [error, setError] = useState('');
 
   const load = () => {
-    api<Customer[]>('/api/customers')
-      .then(setCustomers)
+    Promise.all([
+      api<Customer[]>('/api/customers'),
+      api<PublicUser[]>('/api/users'),
+      api<PublicUser>('/api/me'),
+    ])
+      .then(([c, u, m]) => {
+        setCustomers(c);
+        setUsers(u);
+        setMe(m);
+      })
       .catch((err: Error) => setError(err.message));
   };
 
@@ -32,12 +43,21 @@ export default function CustomersPage() {
     }
   };
 
+  const ownerName = (id: string) => users.find((u) => u.id === id)?.name ?? '（不明）';
+
+  const visible = useMemo(() => {
+    if (ownerFilter === 'all') return customers;
+    if (ownerFilter === 'mine') return customers.filter((c) => c.ownerRepId === me?.id);
+    return customers.filter((c) => c.ownerRepId === ownerFilter);
+  }, [customers, ownerFilter, me]);
+
   return (
     <div className="page">
       <div className="page-head">
         <h1 className="page-title">顧客カルテ</h1>
         <p className="page-desc">
-          確認済みの事実・担当者の報告・AIの仮説を区別して記録します。情報がない項目は「未確認」のままにします。
+          チーム全員で共有します。確認済みの事実・担当者の報告・AIの仮説を区別して記録し、
+          情報がない項目は「未確認」のままにします。
         </p>
       </div>
 
@@ -54,20 +74,42 @@ export default function CustomersPage() {
           <button type="button" className="btn-primary" onClick={create} disabled={!name.trim()}>
             追加
           </button>
+          <span className="faint">担当者は自分になります（後から引き継げます）</span>
         </div>
       </div>
 
       {error && <div className="alert alert-error" style={{ marginTop: 12 }}>{error}</div>}
 
       <div className="card">
-        <h2 className="card-title">登録済み（{customers.length}件）</h2>
-        {customers.length === 0 ? (
-          <div className="empty">まだ顧客がありません。相談画面でAIが抽出した情報から作成することもできます。</div>
+        <div className="spread" style={{ marginBottom: 10 }}>
+          <h2 className="card-title" style={{ margin: 0 }}>
+            登録済み（{visible.length}件）
+          </h2>
+          <label className="row" style={{ gap: 6 }}>
+            <span className="faint">担当者</span>
+            <select
+              value={ownerFilter}
+              onChange={(e) => setOwnerFilter(e.target.value)}
+              style={{ maxWidth: 200 }}
+            >
+              <option value="all">すべて</option>
+              <option value="mine">自分の顧客</option>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        {visible.length === 0 ? (
+          <div className="empty">該当する顧客がありません。</div>
         ) : (
           <table>
             <thead>
               <tr>
                 <th>顧客</th>
+                <th>担当者</th>
                 <th>{CUSTOMER_FIELD_LABEL.coreIssue}</th>
                 <th>{CUSTOMER_FIELD_LABEL.temperature}</th>
                 <th>未確認</th>
@@ -75,7 +117,7 @@ export default function CustomersPage() {
               </tr>
             </thead>
             <tbody>
-              {customers.map((customer) => {
+              {visible.map((customer) => {
                 const issue = customer.fields.coreIssue;
                 const temperature = customer.fields.temperature;
                 return (
@@ -84,6 +126,10 @@ export default function CustomersPage() {
                       <Link href={`/customers/${customer.id}`} style={{ color: 'var(--accent)', fontWeight: 600 }}>
                         {customer.displayName}
                       </Link>
+                    </td>
+                    <td className="owner-tag">
+                      {ownerName(customer.ownerRepId)}
+                      {customer.ownerRepId === me?.id && <span className="badge badge-rep"> 自分</span>}
                     </td>
                     <td>
                       {issue ? (

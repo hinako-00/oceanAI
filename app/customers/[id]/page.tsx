@@ -9,7 +9,7 @@ import {
   CUSTOMER_FIELD_LABEL,
   FACT_SOURCE_LABEL,
 } from '@/lib/types';
-import type { Customer, CustomerFieldKey, FactSource, Meeting, Mode } from '@/lib/types';
+import type { Customer, CustomerFieldKey, FactSource, Meeting, Mode, NextAction, PublicUser } from '@/lib/types';
 
 const SOURCE_CLASS: Record<FactSource, string> = {
   confirmed: 'badge badge-confirmed',
@@ -26,6 +26,9 @@ export default function CustomerDetailPage() {
   const router = useRouter();
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [actions, setActions] = useState<NextAction[]>([]);
+  const [users, setUsers] = useState<PublicUser[]>([]);
+  const [me, setMe] = useState<PublicUser | null>(null);
   const [error, setError] = useState('');
   const [editing, setEditing] = useState<CustomerFieldKey | null>(null);
   const [draft, setDraft] = useState<{ value: string; source: FactSource; evidence: string }>({
@@ -37,9 +40,18 @@ export default function CustomerDetailPage() {
 
   const load = useCallback(async () => {
     try {
-      const data = await api<{ customer: Customer; meetings: Meeting[] }>(`/api/customers/${params.id}`);
+      const [data, team, current] = await Promise.all([
+        api<{ customer: Customer; meetings: Meeting[]; nextActions: NextAction[] }>(
+          `/api/customers/${params.id}`,
+        ),
+        api<PublicUser[]>('/api/users'),
+        api<PublicUser>('/api/me'),
+      ]);
       setCustomer(data.customer);
       setMeetings(data.meetings);
+      setActions(data.nextActions);
+      setUsers(team);
+      setMe(current);
     } catch (err) {
       setError(err instanceof Error ? err.message : '読み込みに失敗しました。');
     }
@@ -86,10 +98,23 @@ export default function CustomerDetailPage() {
 
   const remove = async () => {
     if (!customer) return;
-    if (!confirm('この顧客と商談履歴を削除しますか？')) return;
-    await api(`/api/customers/${customer.id}`, { method: 'DELETE' });
-    router.push('/customers');
+    if (!confirm('この顧客と商談履歴を削除しますか？チーム全員から見えなくなります。')) return;
+    try {
+      await api(`/api/customers/${customer.id}`, { method: 'DELETE' });
+      router.push('/customers');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '削除に失敗しました。');
+    }
   };
+
+  /** 担当者の引き継ぎ。誰の案件かを常に明確にしておく。 */
+  const changeOwner = async (ownerRepId: string) => {
+    if (!customer) return;
+    await api(`/api/customers/${customer.id}`, patchBody({ ownerRepId }));
+    await load();
+  };
+
+  const userName = (id: string) => users.find((u) => u.id === id)?.name ?? '（不明）';
 
   /** カルテを添えて相談画面へ渡す。 */
   const askCoach = (text: string, mode: Mode) => {
@@ -105,9 +130,26 @@ export default function CustomerDetailPage() {
       <div className="page-head spread">
         <div>
           <h1 className="page-title">{customer.displayName}</h1>
-          <p className="page-desc">最終更新 {formatDate(customer.updatedAt)}</p>
+          <p className="page-desc">
+            担当者 {userName(customer.ownerRepId)} ／ 最終更新 {formatDate(customer.updatedAt)}
+          </p>
         </div>
         <div className="row">
+          <label className="row" style={{ gap: 6 }}>
+            <span className="faint">担当者</span>
+            <select
+              value={customer.ownerRepId}
+              onChange={(e) => changeOwner(e.target.value)}
+              style={{ maxWidth: 180 }}
+            >
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name}
+                  {user.active ? '' : '（無効）'}
+                </option>
+              ))}
+            </select>
+          </label>
           <button
             type="button"
             className="btn-primary"
@@ -120,9 +162,11 @@ export default function CustomerDetailPage() {
           >
             次回商談の準備を相談
           </button>
-          <button type="button" className="btn-danger" onClick={remove}>
-            削除
-          </button>
+          {(customer.ownerRepId === me?.id || me?.role === 'admin') && (
+            <button type="button" className="btn-danger" onClick={remove}>
+              削除
+            </button>
+          )}
         </div>
       </div>
 
@@ -236,6 +280,25 @@ export default function CustomerDetailPage() {
       </div>
 
       <div className="card">
+        <h2 className="card-title">この顧客の次回行動（{actions.filter((a) => !a.done).length}件）</h2>
+        {actions.filter((a) => !a.done).length === 0 ? (
+          <p className="faint">未完了の行動はありません。</p>
+        ) : (
+          actions
+            .filter((a) => !a.done)
+            .map((action) => (
+              <div key={action.id} style={{ padding: '4px 0' }}>
+                ・{action.action}
+                <div className="faint">
+                  担当: {userName(action.repId)} ／ 期限: {action.due || '未設定'} ／ 目的:{' '}
+                  {action.purpose || '未記載'}
+                </div>
+              </div>
+            ))
+        )}
+      </div>
+
+      <div className="card">
         <h2 className="card-title">商談履歴（{meetings.length}件）</h2>
         {meetings.length === 0 ? (
           <div className="empty">商談記録がありません。「商談を記録」から登録できます。</div>
@@ -247,6 +310,7 @@ export default function CustomerDetailPage() {
                   {meeting.date}　{meeting.title}
                   {meeting.stage && `（${meeting.stage}）`}
                   {meeting.outcome && ` ／ ${meeting.outcome}`}
+                  <span className="owner-tag">　担当: {userName(meeting.repId)}</span>
                 </summary>
                 <div className="pre-wrap" style={{ marginTop: 8 }}>
                   {meeting.rawInput}

@@ -27,6 +27,7 @@ async function write(file, rows) {
 
 const customerId = randomUUID();
 
+// ownerRepId は初期設定で作られる最初の管理者（IDは rep-default を引き継ぐ）に一致させる。
 const customer = {
   id: customerId,
   displayName: '株式会社みなと製作所',
@@ -106,6 +107,7 @@ await write('customers.json', [customer]);
 await write('meetings.json', [meeting]);
 await write('knowledge.json', knowledge);
 console.log('デモデータを投入しました:');
+console.log('  ※ 担当者は初期設定で作成する最初の管理者になります');
 console.log('  顧客カルテ 1件（未確認事項つき）');
 console.log('  商談履歴 1件（文字起こし）');
 console.log(`  自社営業知識 ${knowledge.length}件`);

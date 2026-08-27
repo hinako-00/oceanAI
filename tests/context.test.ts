@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { buildContextBlock, formatCustomer, formatTendencies } from '../lib/context';
-import type { Customer, RepProfile } from '../lib/types';
+import type { Customer, User } from '../lib/types';
 
 const customer: Customer = {
   id: 'c1',
@@ -31,8 +31,12 @@ test('傾向データがない場合は信頼度を低く扱うよう明示す�
 });
 
 test('参照情報ブロックに仕様のすべての見出しが含まれる', () => {
-  const rep: RepProfile = {
+  const rep: User = {
     id: 'rep-default',
+    email: 'yamada@example.com',
+    passwordHash: 'scrypt$x$y',
+    role: 'member',
+    active: true,
     name: '山田',
     experienceYears: 2,
     product: '勤怠SaaS',

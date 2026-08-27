@@ -1,44 +1,28 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import { api, formatDate, patchBody } from '@/lib/client';
-import {
-  CONFIDENCE_LABEL,
-  SKILL_AXIS_LABEL,
-  TENDENCY_CATEGORY_LABEL,
-} from '@/lib/types';
-import type { Confidence, RepProfile, TendencyCategory } from '@/lib/types';
+import TendencyList from '../components/TendencyList';
+import { api, jsonBody, patchBody } from '@/lib/client';
+import { USER_ROLE_LABEL } from '@/lib/types';
+import type { PublicUser } from '@/lib/types';
 
-const CATEGORY_ORDER: TendencyCategory[] = [
-  'strength',
-  'habit',
-  'improve',
-  'goodFit',
-  'hardFit',
-  'nextTry',
-  'change',
-];
-
-const CONFIDENCE_CLASS: Record<Confidence, string> = {
-  low: 'badge badge-ai',
-  mid: 'badge badge-rep',
-  high: 'badge badge-confirmed',
-};
-
-/** 担当者プロフィールと、蓄積された営業傾向の確認画面。 */
+/** 自分のプロフィール・パスワード・蓄積された営業傾向。 */
 export default function ProfilePage() {
   const router = useRouter();
-  const [rep, setRep] = useState<RepProfile | null>(null);
+  const [me, setMe] = useState<PublicUser | null>(null);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
   const [form, setForm] = useState({ name: '', experienceYears: 0, product: '', territory: '', note: '' });
+  const [password, setPassword] = useState({ current: '', next: '', confirm: '' });
+  const [passwordMessage, setPasswordMessage] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
   const load = () => {
-    api<RepProfile>('/api/rep')
+    api<PublicUser>('/api/me')
       .then((data) => {
-        setRep(data);
+        setMe(data);
         setForm({
           name: data.name,
           experienceYears: data.experienceYears,
@@ -53,42 +37,60 @@ export default function ProfilePage() {
   useEffect(load, []);
 
   const save = async () => {
-    await api<RepProfile>('/api/rep', patchBody(form));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-    load();
+    try {
+      await api<PublicUser>('/api/me', patchBody(form));
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+      load();
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '保存に失敗しました。');
+    }
+  };
+
+  const changePassword = async () => {
+    setPasswordError('');
+    setPasswordMessage('');
+    if (password.next !== password.confirm) {
+      setPasswordError('確認用パスワードが一致しません。');
+      return;
+    }
+    try {
+      await api('/api/me/password', jsonBody({ current: password.current, next: password.next }));
+      setPassword({ current: '', next: '', confirm: '' });
+      setPasswordMessage('パスワードを変更しました。他の端末のログインは無効になりました。');
+    } catch (err) {
+      setPasswordError(err instanceof Error ? err.message : '変更に失敗しました。');
+    }
   };
 
   const removeTendency = async (id: string) => {
-    await api(`/api/rep/tendencies/${id}`, { method: 'DELETE' });
+    if (!me) return;
+    await api(`/api/users/${me.id}/tendencies/${id}`, { method: 'DELETE' });
     load();
   };
 
-  const grouped = useMemo(() => {
-    const map = new Map<TendencyCategory, RepProfile['tendencies']>();
-    for (const category of CATEGORY_ORDER) map.set(category, []);
-    for (const tendency of rep?.tendencies ?? []) {
-      map.get(tendency.category)?.push(tendency);
-    }
-    for (const list of map.values()) list.sort((a, b) => b.observedAt.localeCompare(a.observedAt));
-    return map;
-  }, [rep]);
-
-  const total = rep?.tendencies.length ?? 0;
+  const total = me?.tendencies.length ?? 0;
 
   return (
     <div className="page">
       <div className="page-head">
-        <h1 className="page-title">自分の営業傾向</h1>
+        <h1 className="page-title">自分の設定と営業傾向</h1>
         <p className="page-desc">
           記録が少ない段階の分析は「暫定的な傾向」です。根拠・データ数・信頼度をあわせて確認してください。
+          営業傾向はチームのメンバーも閲覧できます。
         </p>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
 
       <div className="card">
-        <h2 className="card-title">担当者プロフィール</h2>
+        <h2 className="card-title">プロフィール</h2>
+        {me && (
+          <p className="faint" style={{ marginTop: 0 }}>
+            {me.email}（{USER_ROLE_LABEL[me.role]}）
+          </p>
+        )}
         <div className="grid-2" style={{ marginBottom: 10 }}>
           <label className="field">
             <span>氏名</span>
@@ -125,6 +127,48 @@ export default function ProfilePage() {
       </div>
 
       <div className="card">
+        <h2 className="card-title">パスワードの変更</h2>
+        <div className="grid-2" style={{ marginBottom: 10 }}>
+          <label className="field">
+            <span>現在のパスワード</span>
+            <input
+              type="password"
+              autoComplete="current-password"
+              value={password.current}
+              onChange={(e) => setPassword({ ...password, current: e.target.value })}
+            />
+          </label>
+          <label className="field">
+            <span>新しいパスワード（10文字以上）</span>
+            <input
+              type="password"
+              autoComplete="new-password"
+              value={password.next}
+              onChange={(e) => setPassword({ ...password, next: e.target.value })}
+            />
+          </label>
+          <label className="field">
+            <span>新しいパスワード（確認）</span>
+            <input
+              type="password"
+              autoComplete="new-password"
+              value={password.confirm}
+              onChange={(e) => setPassword({ ...password, confirm: e.target.value })}
+            />
+          </label>
+        </div>
+        {passwordError && <div className="alert alert-error" style={{ marginBottom: 10 }}>{passwordError}</div>}
+        {passwordMessage && <div className="alert alert-warn" style={{ marginBottom: 10 }}>{passwordMessage}</div>}
+        <button
+          type="button"
+          onClick={changePassword}
+          disabled={!password.current || !password.next}
+        >
+          変更する
+        </button>
+      </div>
+
+      <div className="card">
         <div className="spread" style={{ marginBottom: 8 }}>
           <h2 className="card-title" style={{ margin: 0 }}>
             蓄積された傾向（{total}件）
@@ -145,46 +189,7 @@ export default function ProfilePage() {
             AIに傾向を分析させる
           </button>
         </div>
-        {total === 0 ? (
-          <div className="empty">
-            まだ傾向データがありません。商談の振り返りを重ね、保存候補を承認すると蓄積されます。
-          </div>
-        ) : (
-          CATEGORY_ORDER.map((category) => {
-            const list = grouped.get(category) ?? [];
-            if (list.length === 0) return null;
-            return (
-              <section key={category} style={{ marginBottom: 14 }}>
-                <div className="nav-label" style={{ padding: '0 0 4px' }}>
-                  {TENDENCY_CATEGORY_LABEL[category]}
-                </div>
-                {list.map((tendency) => (
-                  <div key={tendency.id} className="spread" style={{ padding: '6px 0', alignItems: 'flex-start' }}>
-                    <div>
-                      <span className="badge">{SKILL_AXIS_LABEL[tendency.axis]}</span>{' '}
-                      <span className={CONFIDENCE_CLASS[tendency.confidence]}>
-                        信頼度 {CONFIDENCE_LABEL[tendency.confidence]}
-                      </span>{' '}
-                      {tendency.text}
-                      <div className="faint">
-                        根拠: {tendency.basis || '未記載'} ／ 分析データ {tendency.dataCount}件 ／{' '}
-                        {formatDate(tendency.observedAt)}
-                        {tendency.neededData && ` ／ 必要な追加データ: ${tendency.neededData}`}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      className="btn-danger btn-sm"
-                      onClick={() => removeTendency(tendency.id)}
-                    >
-                      削除
-                    </button>
-                  </div>
-                ))}
-              </section>
-            );
-          })
-        )}
+        <TendencyList tendencies={me?.tendencies ?? []} onDelete={removeTendency} />
       </div>
     </div>
   );

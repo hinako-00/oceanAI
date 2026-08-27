@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { api, jsonBody } from '@/lib/client';
 import { KNOWLEDGE_TYPE_LABEL } from '@/lib/types';
-import type { Knowledge, KnowledgeType } from '@/lib/types';
+import type { Knowledge, KnowledgeType, PublicUser } from '@/lib/types';
 
 const TYPES = Object.keys(KNOWLEDGE_TYPE_LABEL) as KnowledgeType[];
 
@@ -14,12 +14,22 @@ const TYPES = Object.keys(KNOWLEDGE_TYPE_LABEL) as KnowledgeType[];
  */
 export default function KnowledgePage() {
   const [items, setItems] = useState<Knowledge[]>([]);
+  const [users, setUsers] = useState<PublicUser[]>([]);
+  const [me, setMe] = useState<PublicUser | null>(null);
   const [error, setError] = useState('');
   const [form, setForm] = useState({ type: 'product' as KnowledgeType, title: '', body: '', tags: '' });
 
   const load = () => {
-    api<Knowledge[]>('/api/knowledge')
-      .then(setItems)
+    Promise.all([
+      api<Knowledge[]>('/api/knowledge'),
+      api<PublicUser[]>('/api/users'),
+      api<PublicUser>('/api/me'),
+    ])
+      .then(([k, u, current]) => {
+        setItems(k);
+        setUsers(u);
+        setMe(current);
+      })
       .catch((err: Error) => setError(err.message));
   };
 
@@ -44,10 +54,18 @@ export default function KnowledgePage() {
   };
 
   const remove = async (id: string) => {
-    if (!confirm('この知識を削除しますか？')) return;
-    await api(`/api/knowledge/${id}`, { method: 'DELETE' });
-    load();
+    if (!confirm('この知識を削除しますか？チーム全員から見えなくなります。')) return;
+    try {
+      await api(`/api/knowledge/${id}`, { method: 'DELETE' });
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '削除に失敗しました。');
+    }
   };
+
+  const userName = (id?: string) => (id ? users.find((u) => u.id === id)?.name ?? '（不明）' : '—');
+  const canDelete = (item: Knowledge) =>
+    !item.createdBy || item.createdBy === me?.id || me?.role === 'admin';
 
   return (
     <div className="page">
@@ -55,6 +73,7 @@ export default function KnowledgePage() {
         <h1 className="page-title">自社営業知識</h1>
         <p className="page-desc">
           登録した商品資料・営業ルール・成功事例は、一般的な営業理論より優先してAIが参照します。
+          チーム全員で共有されます。
         </p>
       </div>
 
@@ -126,10 +145,15 @@ export default function KnowledgePage() {
                   {item.body}
                 </div>
                 <div className="spread" style={{ marginTop: 8 }}>
-                  <span className="faint">{item.tags.join(' / ')}</span>
-                  <button type="button" className="btn-danger btn-sm" onClick={() => remove(item.id)}>
-                    削除
-                  </button>
+                  <span className="faint">
+                    {item.tags.join(' / ')}
+                    {item.tags.length > 0 && ' ／ '}登録者: {userName(item.createdBy)}
+                  </span>
+                  {canDelete(item) && (
+                    <button type="button" className="btn-danger btn-sm" onClick={() => remove(item.id)}>
+                      削除
+                    </button>
+                  )}
                 </div>
               </details>
             ))}
