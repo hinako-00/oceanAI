@@ -1,48 +1,51 @@
 # Netlifyへのデプロイ
 
-チームメンバーとすり合わせるための確認環境（本番相当のURL）を、最短で用意する手順です。
+チームメンバーとすり合わせるための確認環境（本番相当のURL）です。
 
 ## 現在の状況
 
-- Netlifyサイトは作成済みです: **`ocean-ai-sales-coach`**（チーム `Oceanチーム` 配下）
+- サイト: **`ocean-ai-sales-coach`**（チーム `Oceanチーム` 配下）
   - ダッシュボード: `https://app.netlify.com/projects/ocean-ai-sales-coach`
-  - 公開URL（デプロイ後）: `https://ocean-ai-sales-coach.netlify.app`
-- 環境変数を設定済みです: `ANTHROPIC_MODEL=claude-opus-5`、`ANTHROPIC_MAX_TOKENS=8000`
-- アプリ側もNetlifyで動くように対応済みです（後述）。
-- **まだデプロイ（ビルド）は実行されていません。** このセッションのネットワークポリシーが、
-  直接デプロイに使う中継先（`netlify-mcp.netlify.app`）への接続をブロックしているためです
-  （組織のアクセス制御によるもので、こちら側の設定ミスではありません）。
-  そのため、以下のどちらかの方法で実行してください。
+  - 公開URL: `https://ocean-ai-sales-coach.netlify.app`
+- GitHub連携済み・デプロイ済みです（ブランチ `claude/ai-sales-coach-app-hs8npk`）。
+  以降は `git push` のたびに自動でビルド・デプロイされます。
+- 環境変数を設定済みです: `ANTHROPIC_MODEL`、`ANTHROPIC_MAX_TOKENS`、`ANTHROPIC_API_KEY`、
+  **`STORAGE_DRIVER=blobs`**。
 
-## 方法A：GitHub連携（推奨）
+### `STORAGE_DRIVER=blobs` は必須
 
-コードはブランチ `claude/ai-sales-coach-app-hs8npk` にプッシュ済みです。
-Netlifyダッシュボードからリポジトリを連携するだけで、以後は `git push` のたびに自動デプロイされます。
-このセッションのネットワーク制限を経由しないため、確実に動きます。
+省略すると、Netlify Functionsの読み取り専用のファイルシステムにJSONファイルを書き込もうとして
+`EROFS: read-only file system` でエラーになります（実際に一度これで初期設定画面が失敗しました）。
 
-1. `https://app.netlify.com/projects/ocean-ai-sales-coach` を開く
-2. **Project configuration → Build & deploy → Link repository**（またはトップの「Link repository」ボタン）
-3. GitHub を選び、`hinako-00/oceanAI` を選択
+当初は環境変数 `NETLIFY`（Netlifyがビルド時に自動設定する）の有無で自動判定するつもりでしたが、
+**Netlify Functionsの実行時には `process.env.NETLIFY` が乗ってこない**ことがあるとわかったため、
+確実な `STORAGE_DRIVER` を明示する方式に変更しています（`lib/storage-driver.ts`）。
+AWS Lambdaのランタイム変数（Netlify Functionsの実体）からの自動検知も保険として追加していますが、
+Netlifyでは `STORAGE_DRIVER=blobs` の明示設定が確実です。
+
+**このサイトを作り直す・複製する場合は、この変数を忘れずに設定してください。**
+（Site configuration → Environment variables → `STORAGE_DRIVER` = `blobs`、スコープはAll scopes）
+
+## サイトを新しく作る場合の手順
+
+すでに上記のサイトはセットアップ済みですが、複製したり作り直す場合の手順です。
+
+1. Netlifyダッシュボードで新規サイトを作成し、**Link repository** → GitHub → `hinako-00/oceanAI`
+   を選択
    （Netlifyのログインと連携先のGitHubアカウントは別で構いません。認可画面ではリポジトリの
    オーナー〈`hinako-00`〉でログインしてください）
-4. デプロイ元ブランチに `claude/ai-sales-coach-app-hs8npk` を指定
+2. デプロイ元ブランチを指定
    （ビルドコマンドと使用するプラグインは `netlify.toml` に書いてあるので、追加設定は不要です）
-5. **（任意）** `ANTHROPIC_API_KEY` を設定する場合は **Site configuration → Environment variables** で追加
-   （[Anthropic Console](https://console.anthropic.com/) で発行したキー。他の変数は設定済みです）。
-   **設定しなくてもデプロイして画面を確認できます。** 課金が発生するのはAPIキーを設定した
-   うえで実際にAIコーチへメッセージを送ったときだけです。未設定のままだと、AIコーチとの
-   チャット・ロールプレイだけが「未設定です」という案内になり、それ以外（ログイン、顧客カルテ、
-   商談記録、メンバー管理、次回行動、自社営業知識）は普通に確認できます。
-   後から試したくなったら、環境変数を追加して次のステップの「Trigger deploy」をやり直すだけで
-   反映されます（コードの変更は不要）。
-6. **Deploys → Trigger deploy** でビルドを開始する
+3. **Site configuration → Environment variables** で以下を設定
+   - `STORAGE_DRIVER` = `blobs` **（必須。上記の理由により省略不可）**
+   - `ANTHROPIC_API_KEY` = Anthropic Consoleで発行したキー（**任意**。未設定でもデプロイでき、
+     AIコーチのチャット・ロールプレイだけが「未設定です」という案内になる。それ以外の機能
+     ──ログイン、顧客カルテ、商談記録、メンバー管理、次回行動、自社営業知識──は問題なく
+     確認できる。課金はキー設定後に実際にメッセージを送ったときのみ発生する）
+   - `ANTHROPIC_MODEL` / `ANTHROPIC_MAX_TOKENS`（任意。既定値は `claude-opus-5` / `8000`）
+4. **Deploys → Trigger deploy** でビルドを開始
 
-数分後に `https://ocean-ai-sales-coach.netlify.app` が使えるようになります。
-以降はチームメンバーへこのURLを共有すれば、実際の画面で確認・すり合わせができます。
-
-## 方法B：自分のPCから直接デプロイ
-
-Netlify CLIが使えるなら、このセッションを介さず直接アップロードできます。
+### Netlify CLIから直接デプロイする場合
 
 ```bash
 git clone https://github.com/hinako-00/oceanAI.git
@@ -50,8 +53,9 @@ cd oceanAI
 git checkout claude/ai-sales-coach-app-hs8npk
 npm install
 npx netlify login
-npx netlify link --id <サイトID>   # ダッシュボードの Site configuration → General に表示されています
-npx netlify env:set ANTHROPIC_API_KEY sk-ant-...
+npx netlify link --id <サイトID>   # ダッシュボードの Site configuration → General に表示されている
+npx netlify env:set STORAGE_DRIVER blobs
+npx netlify env:set ANTHROPIC_API_KEY sk-ant-...   # 任意
 npx netlify deploy --build --prod
 ```
 
@@ -62,14 +66,14 @@ Netlifyのサーバーレス関数はリクエストごとに実行環境が使�
 **Netlify Blobs**（Netlifyが提供するキーバリューストア）で永続化する実装を追加しました。
 
 - `lib/store-blobs.ts`：Netlify Blobsを使う永続化バックエンド
-- `lib/store.ts`：環境変数 `NETLIFY`（Netlifyが自動設定）を見て、ファイル保存とBlobsを自動的に切り替える
-- `lib/storage-driver.ts`：その判定ロジックだけを取り出した純粋関数（`tests/storage-driver.test.ts` でテスト済み）
+- `lib/store.ts`：`lib/storage-driver.ts` の判定結果を見て、ファイル保存とBlobsを切り替える
+- `lib/storage-driver.ts`：判定ロジック。`STORAGE_DRIVER` の明示設定を最優先し、次点でAWS Lambda
+  ランタイム変数からサーバーレス実行を検知する（`tests/storage-driver.test.ts` でテスト済み）
 - `next.config.mjs`：Netlifyビルド時は `output: 'standalone'` を無効化（Docker向けの設定のため）
 - `netlify.toml`：ビルドコマンドと `@netlify/plugin-nextjs` の指定
 
 **ローカル開発・Docker/systemd運用（DEPLOY.md）は今までどおりJSONファイル保存のままで、
-今回の変更による影響はありません。** 実際に `npm test` / `npm run build`（NETLIFY環境変数なし）が
-変更前と同じ結果になることを確認済みです。
+今回の変更による影響はありません。**
 
 ### Netlify Blobsの制約（確認用途では問題ないが、知っておくこと）
 
@@ -78,19 +82,18 @@ Netlifyのサーバーレス関数はリクエストごとに実行環境が使�
   少人数での確認・デモには支障ありませんが、本格運用で書き込みの競合が増えてきたら
   DEPLOY.mdの「人数が増えたとき：DBへの移行」に従ってPostgreSQL等へ移行してください。
 - サイトを削除するとBlobsのデータも消えます。確認が終わったサイトを消す前に、
-  必要なら以下でバックアップしてください（`STORAGE_DRIVER=file` にすると
-  ローカルではファイル保存を強制できるので、移行や検証にも使えます）。
+  必要ならバックアップしてください（`STORAGE_DRIVER=file` にするとローカルではファイル保存を
+  強制できるので、移行や検証にも使えます）。
 
 ## 確認の流れ
 
-デプロイ後、初回アクセス時は自動で `/setup` に移動します。README.md / DEPLOY.md と同じ手順です。
+初回アクセス時は自動で `/setup` に移動します。README.md / DEPLOY.md と同じ手順です。
 
 1. 最初の管理者アカウントを作成
 2. 「メンバー管理」でチームメンバーを追加（すり合わせに参加する人数分）
 3. 「自社営業知識」にサンプルの商品情報を1つ登録
 4. 「商談を記録」でサンプルの商談メモを1件登録する
-5. **（`ANTHROPIC_API_KEY` を設定した場合のみ）** 登録した商談をAIに振り返らせてみる。
-   未設定の場合はここまでの画面・操作感の確認で一区切りにしてください。
+5. **（`ANTHROPIC_API_KEY` を設定した場合のみ）** 登録した商談をAIに振り返らせてみる
 
 ## 確認が終わったら
 
