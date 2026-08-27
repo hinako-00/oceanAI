@@ -98,7 +98,7 @@ export default function ActionsPage() {
                 disabled={!canEdit(action)}
                 onChange={() => toggle(action)}
               />
-              <span style={{ flex: 1 }}>
+              <span style={{ flex: 1, minWidth: 0 }}>
                 {action.action}
                 <div className="faint">
                   {scope === 'team' && `担当: ${userName(action.repId)} ／ `}
@@ -112,7 +112,12 @@ export default function ActionsPage() {
                 </div>
               </span>
               {canEdit(action) && (
-                <button type="button" className="btn-danger btn-sm" onClick={() => remove(action.id)}>
+                <button
+                  type="button"
+                  className="btn-danger btn-sm"
+                  style={{ flex: 'none' }}
+                  onClick={() => remove(action.id)}
+                >
                   削除
                 </button>
               )}
@@ -157,7 +162,12 @@ export default function ActionsPage() {
           </label>
         </div>
         {error && <div className="alert alert-error" style={{ marginBottom: 10 }}>{error}</div>}
-        <button type="button" className="btn-primary" onClick={add} disabled={!form.action.trim()}>
+        <button
+          type="button"
+          className="btn-primary btn-block"
+          onClick={add}
+          disabled={!form.action.trim()}
+        >
           追加
         </button>
       </div>
@@ -168,8 +178,13 @@ export default function ActionsPage() {
           {done.map((action) => (
             <div key={action.id} className="checkline">
               <input type="checkbox" checked readOnly onClick={() => toggle(action)} />
-              <span style={{ flex: 1, color: 'var(--text-faint)' }}>{action.action}</span>
-              <button type="button" className="btn-danger btn-sm" onClick={() => remove(action.id)}>
+              <span style={{ flex: 1, minWidth: 0, color: 'var(--text-faint)' }}>{action.action}</span>
+              <button
+                type="button"
+                className="btn-danger btn-sm"
+                style={{ flex: 'none' }}
+                onClick={() => remove(action.id)}
+              >
                 削除
               </button>
             </div>

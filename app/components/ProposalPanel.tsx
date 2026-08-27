@@ -125,7 +125,7 @@ export default function ProposalPanel({ proposal, customers, currentCustomerId, 
                 checked={fieldIndexes.includes(index)}
                 onChange={() => toggle(fieldIndexes, setFieldIndexes, index)}
               />
-              <span>
+              <span style={{ minWidth: 0 }}>
                 <span className={SOURCE_CLASS[field.source]}>{FACT_SOURCE_LABEL[field.source]}</span>{' '}
                 <strong>{CUSTOMER_FIELD_LABEL[field.key]}</strong>: {field.value}
                 {field.evidence && <div className="faint">根拠: {field.evidence}</div>}
@@ -221,7 +221,7 @@ export default function ProposalPanel({ proposal, customers, currentCustomerId, 
 
       {error && <div className="alert alert-error" style={{ marginBottom: 8 }}>{error}</div>}
 
-      <div className="row">
+      <div className="page-actions" style={{ marginTop: 0 }}>
         <button
           type="button"
           className="btn-primary"

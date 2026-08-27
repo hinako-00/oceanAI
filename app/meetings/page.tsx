@@ -188,7 +188,7 @@ export default function MeetingsPage() {
 
         {error && <div className="alert alert-error" style={{ marginBottom: 10 }}>{error}</div>}
 
-        <div className="row">
+        <div className="page-actions" style={{ marginTop: 0 }}>
           <button type="button" className="btn-primary" disabled={saving} onClick={() => save(true)}>
             保存してAIに振り返らせる
           </button>
@@ -203,13 +203,13 @@ export default function MeetingsPage() {
         {meetings.length === 0 ? (
           <div className="empty">まだ商談記録がありません。</div>
         ) : (
-          <table>
+          <table className="cards">
             <thead>
               <tr>
-                <th>日付</th>
                 <th>顧客</th>
-                <th>担当者</th>
+                <th>日付</th>
                 <th>商談</th>
+                <th>担当者</th>
                 <th>段階</th>
                 <th>結果</th>
                 <th />
@@ -218,13 +218,25 @@ export default function MeetingsPage() {
             <tbody>
               {meetings.map((meeting) => (
                 <tr key={meeting.id}>
-                  <td>{meeting.date}</td>
-                  <td>{customerName(meeting.customerId)}</td>
-                  <td className="owner-tag">{userName(meeting.repId)}</td>
-                  <td>{meeting.title}</td>
-                  <td>{meeting.stage || '—'}</td>
-                  <td>{meeting.outcome || '—'}</td>
-                  <td>
+                  <td data-head="">
+                    <strong>{customerName(meeting.customerId)}</strong>
+                    <div className="faint">
+                      {meeting.date}
+                      {meeting.title && ` ／ ${meeting.title}`}
+                    </div>
+                  </td>
+                  <td data-label="日付" className="desktop-cell">
+                    {meeting.date}
+                  </td>
+                  <td data-label="商談" className="desktop-cell">
+                    {meeting.title}
+                  </td>
+                  <td className="owner-tag" data-label="担当者">
+                    {userName(meeting.repId)}
+                  </td>
+                  <td data-label="段階">{meeting.stage || '—'}</td>
+                  <td data-label="結果">{meeting.outcome || '—'}</td>
+                  <td data-actions="">
                     {(meeting.repId === me?.id || me?.role === 'admin') && (
                       <button type="button" className="btn-danger btn-sm" onClick={() => remove(meeting.id)}>
                         削除

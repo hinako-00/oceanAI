@@ -49,7 +49,7 @@ export default function MembersPage() {
         {users.length === 0 ? (
           <div className="empty">メンバーがいません。</div>
         ) : (
-          <table>
+          <table className="cards">
             <thead>
               <tr>
                 <th>氏名</th>
@@ -63,8 +63,8 @@ export default function MembersPage() {
             <tbody>
               {users.map((user) => (
                 <tr key={user.id}>
-                  <td>
-                    <Link href={`/members/${user.id}`} style={{ color: 'var(--accent)', fontWeight: 600 }}>
+                  <td data-head="">
+                    <Link href={`/members/${user.id}`} style={{ color: 'var(--accent)', fontWeight: 700 }}>
                       {user.name}
                     </Link>
                     {!user.active && <span className="badge badge-unconfirmed"> 無効</span>}
@@ -72,11 +72,11 @@ export default function MembersPage() {
                       {USER_ROLE_LABEL[user.role]}・経験{user.experienceYears}年
                     </div>
                   </td>
-                  <td>{user.product || '—'}</td>
-                  <td>{count(user, 'strength')}件</td>
-                  <td>{count(user, 'improve')}件</td>
-                  <td>{count(user, 'nextTry')}件</td>
-                  <td className="faint">{lastObserved(user)}</td>
+                  <td data-label="担当商材">{user.product || '—'}</td>
+                  <td data-label={TENDENCY_CATEGORY_LABEL.strength}>{count(user, 'strength')}件</td>
+                  <td data-label={TENDENCY_CATEGORY_LABEL.improve}>{count(user, 'improve')}件</td>
+                  <td data-label={TENDENCY_CATEGORY_LABEL.nextTry}>{count(user, 'nextTry')}件</td>
+                  <td className="faint" data-label="最終更新">{lastObserved(user)}</td>
                 </tr>
               ))}
             </tbody>

@@ -127,29 +127,12 @@ export default function CustomerDetailPage() {
 
   return (
     <div className="page">
-      <div className="page-head spread">
-        <div>
-          <h1 className="page-title">{customer.displayName}</h1>
-          <p className="page-desc">
-            担当者 {userName(customer.ownerRepId)} ／ 最終更新 {formatDate(customer.updatedAt)}
-          </p>
-        </div>
-        <div className="row">
-          <label className="row" style={{ gap: 6 }}>
-            <span className="faint">担当者</span>
-            <select
-              value={customer.ownerRepId}
-              onChange={(e) => changeOwner(e.target.value)}
-              style={{ maxWidth: 180 }}
-            >
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name}
-                  {user.active ? '' : '（無効）'}
-                </option>
-              ))}
-            </select>
-          </label>
+      <div className="page-head">
+        <h1 className="page-title">{customer.displayName}</h1>
+        <p className="page-desc">
+          担当者 {userName(customer.ownerRepId)} ／ 最終更新 {formatDate(customer.updatedAt)}
+        </p>
+        <div className="page-actions">
           <button
             type="button"
             className="btn-primary"
@@ -168,11 +151,22 @@ export default function CustomerDetailPage() {
             </button>
           )}
         </div>
+        <label className="field" style={{ marginTop: 12, maxWidth: 320 }}>
+          <span>担当者を引き継ぐ</span>
+          <select value={customer.ownerRepId} onChange={(e) => changeOwner(e.target.value)}>
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.name}
+                {user.active ? '' : '（無効）'}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       <div className="card">
         <h2 className="card-title">ヒアリング項目</h2>
-        <table>
+        <table className="rows">
           <tbody>
             {CUSTOMER_FIELD_KEYS.map((key) => {
               const field = customer.fields[key];
@@ -192,7 +186,6 @@ export default function CustomerDetailPage() {
                           <select
                             value={draft.source}
                             onChange={(e) => setDraft({ ...draft, source: e.target.value as FactSource })}
-                            style={{ maxWidth: 200 }}
                           >
                             {EDITABLE_SOURCES.map((source) => (
                               <option key={source} value={source}>
@@ -204,7 +197,6 @@ export default function CustomerDetailPage() {
                             value={draft.evidence}
                             placeholder="根拠（顧客の発言など）"
                             onChange={(e) => setDraft({ ...draft, evidence: e.target.value })}
-                            style={{ maxWidth: 320 }}
                           />
                         </div>
                         <div className="row">
@@ -217,8 +209,8 @@ export default function CustomerDetailPage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="spread">
-                        <div>
+                      <div className="spread" style={{ alignItems: 'flex-start' }}>
+                        <div style={{ minWidth: 0 }}>
                           {field?.value ? (
                             <>
                               <span className={SOURCE_CLASS[field.source]}>
@@ -231,7 +223,12 @@ export default function CustomerDetailPage() {
                             <span className="badge badge-unconfirmed">未確認</span>
                           )}
                         </div>
-                        <button type="button" className="btn-sm" onClick={() => startEdit(key)}>
+                        <button
+                          type="button"
+                          className="btn-sm"
+                          style={{ flex: 'none' }}
+                          onClick={() => startEdit(key)}
+                        >
                           編集
                         </button>
                       </div>
@@ -248,23 +245,28 @@ export default function CustomerDetailPage() {
         <h2 className="card-title">未確認事項（{customer.openQuestions.length}件）</h2>
         {customer.openQuestions.length === 0 && <p className="faint">登録なし</p>}
         {customer.openQuestions.map((question, index) => (
-          <div key={`${question}-${index}`} className="spread" style={{ padding: '4px 0' }}>
-            <span>・{question}</span>
+          <div
+            key={`${question}-${index}`}
+            className="spread"
+            style={{ padding: '6px 0', alignItems: 'flex-start' }}
+          >
+            <span style={{ minWidth: 0 }}>・{question}</span>
             <button
               type="button"
               className="btn-danger btn-sm"
+              style={{ flex: 'none' }}
               onClick={() => saveQuestions(customer.openQuestions.filter((_, i) => i !== index))}
             >
               解消
             </button>
           </div>
         ))}
-        <div className="row" style={{ marginTop: 8 }}>
+        <div className="row" style={{ marginTop: 10 }}>
           <input
             value={newQuestion}
             placeholder="次回確認したいこと"
             onChange={(e) => setNewQuestion(e.target.value)}
-            style={{ maxWidth: 360 }}
+            style={{ flex: '1 1 200px', minWidth: 0 }}
           />
           <button
             type="button"
@@ -309,8 +311,9 @@ export default function CustomerDetailPage() {
                 <summary>
                   {meeting.date}　{meeting.title}
                   {meeting.stage && `（${meeting.stage}）`}
-                  {meeting.outcome && ` ／ ${meeting.outcome}`}
-                  <span className="owner-tag">　担当: {userName(meeting.repId)}</span>
+                  <div className="faint" style={{ fontWeight: 400 }}>
+                    {meeting.outcome && `${meeting.outcome} ／ `}担当: {userName(meeting.repId)}
+                  </div>
                 </summary>
                 <div className="pre-wrap" style={{ marginTop: 8 }}>
                   {meeting.rawInput}

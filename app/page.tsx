@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Formatted from './components/Formatted';
 import ProposalPanel from './components/ProposalPanel';
-import { api, jsonBody } from '@/lib/client';
+import { IconClose, IconHistory, IconPlus, IconSend, IconSettings } from './components/nav';
+import { api } from '@/lib/client';
 import { MODE_LABEL } from '@/lib/types';
 import type { Customer, Message, Mode, PublicUser, Session, UpdateProposal } from '@/lib/types';
 
@@ -31,6 +32,9 @@ const QUICK_PROMPTS = [
 
 const DIFFICULTIES = ['易しい', '標準', '難しい'] as const;
 
+/** モバイルで開いている副パネル。PCでは常時表示なので使わない。 */
+type Pane = 'none' | 'list' | 'side';
+
 export default function ChatPage() {
   const [data, setData] = useState<Bootstrap | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -42,6 +46,7 @@ export default function ChatPage() {
   const [customerId, setCustomerId] = useState('');
   const [mode, setMode] = useState<Mode | ''>('');
   const [proposal, setProposal] = useState<UpdateProposal | null>(null);
+  const [pane, setPane] = useState<Pane>('none');
   const [roleplay, setRoleplay] = useState({
     product: '',
     persona: '',
@@ -84,9 +89,33 @@ export default function ChatPage() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, streaming]);
 
+  // 入力量に応じて高さを変える。スマートフォンでは画面の4割までに抑える。
+  useEffect(() => {
+    const element = textareaRef.current;
+    if (!element) return;
+    element.style.height = 'auto';
+    element.style.height = `${Math.min(element.scrollHeight, window.innerHeight * 0.4)}px`;
+  }, [input]);
+
+  // シートを開いている間は背面をスクロールさせない。Escキーで閉じられるようにする。
+  useEffect(() => {
+    if (pane === 'none') return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setPane('none');
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [pane]);
+
   const openSession = async (id: string) => {
     setError('');
     setProposal(null);
+    setPane('none');
     try {
       const session = await api<Session>(`/api/sessions/${id}`);
       setSessionId(session.id);
@@ -111,6 +140,7 @@ export default function ChatPage() {
     setRoleplayActive(false);
     setShowRoleplayForm(false);
     setInput('');
+    setPane('none');
     textareaRef.current?.focus();
   };
 
@@ -221,6 +251,7 @@ export default function ChatPage() {
     }
     setRoleplayActive(true);
     setShowRoleplayForm(false);
+    setPane('none');
     setMode('F');
     await send('ロールプレイを開始します。顧客役として最初の一言をお願いします。', {
       action: 'start',
@@ -238,23 +269,96 @@ export default function ChatPage() {
     [data, customerId],
   );
 
+  const useQuickPrompt = (text: string) => {
+    setInput(text);
+    textareaRef.current?.focus();
+  };
+
   return (
     <div className="chat">
+      {/* モバイル専用の操作バー。履歴と設定をシートで開く。 */}
+      <div className="chat-toolbar mobile-only">
+        <button
+          type="button"
+          className="btn-icon"
+          aria-label="これまでの相談"
+          onClick={() => setPane(pane === 'list' ? 'none' : 'list')}
+        >
+          <IconHistory />
+        </button>
+        <span className="chat-toolbar-context">
+          {roleplayActive
+            ? 'ロールプレイ中'
+            : selectedCustomer
+              ? selectedCustomer.displayName
+              : '顧客未選択'}
+        </span>
+        <button
+          type="button"
+          className="btn-icon"
+          aria-label="新しい相談"
+          onClick={newSession}
+        >
+          <IconPlus />
+        </button>
+        <button
+          type="button"
+          className="btn-icon"
+          aria-label="この相談の設定"
+          onClick={() => setPane(pane === 'side' ? 'none' : 'side')}
+        >
+          <IconSettings />
+        </button>
+      </div>
+
+      {/* シートを開いている間の背景。PCでは表示しない。 */}
+      {pane !== 'none' && (
+        <div className="sheet-backdrop mobile-only" onClick={() => setPane('none')} />
+      )}
+
       {/* 会話一覧 */}
-      <div className="chat-list">
-        <button type="button" className="btn-primary" style={{ width: '100%' }} onClick={newSession}>
+      <div className="chat-pane chat-pane-list" data-open={pane === 'list'}>
+        <div className="sheet-grip" />
+        <div className="sheet-head">
+          <h2 className="sheet-title mobile-only">これまでの相談</h2>
+          <button
+            type="button"
+            className="btn-icon sheet-close mobile-only"
+            aria-label="閉じる"
+            onClick={() => setPane('none')}
+          >
+            <IconClose />
+          </button>
+        </div>
+
+        <button type="button" className="btn-primary btn-block" onClick={newSession}>
           ＋ 新しい相談
         </button>
-        <div className="nav-label" style={{ marginTop: 16 }}>
+
+        <div className="nav-label desktop-only" style={{ marginTop: 16 }}>
           これまでの相談
         </div>
-        {data?.sessions.length === 0 && <div className="faint" style={{ padding: '8px 10px' }}>まだ相談はありません</div>}
+
+        {data?.sessions.length === 0 && (
+          <div className="faint" style={{ padding: '10px 2px' }}>
+            まだ相談はありません
+          </div>
+        )}
+
         {data?.sessions.map((session) => (
           <div
             key={session.id}
             className="session-item"
             data-active={session.id === sessionId}
+            role="button"
+            tabIndex={0}
             onClick={() => openSession(session.id)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                void openSession(session.id);
+              }
+            }}
           >
             <div className="session-title">{session.title}</div>
             <div className="spread">
@@ -282,27 +386,24 @@ export default function ChatPage() {
           <div className="chat-inner">
             {data && !data.hasApiKey && (
               <div className="alert alert-warn">
-                ANTHROPIC_API_KEY が未設定です。プロジェクト直下に .env.local を作成し、キーを設定してから再起動してください。
+                ANTHROPIC_API_KEY が未設定です。設定するとAIコーチとの相談が使えます。
               </div>
             )}
 
             {messages.length === 0 && !streaming && (
               <div className="card">
                 <h2 className="card-title">何を手伝いましょうか</h2>
-                <p className="muted" style={{ marginTop: 0 }}>
+                <p className="muted" style={{ margin: '0 0 12px' }}>
                   商談メモや文字起こしを貼り付ければ振り返りを、これからの商談なら準備を支援します。
                   目的が決まっていない場合はそのまま相談してください。
                 </p>
-                <div className="row">
+                <div className="chips">
                   {QUICK_PROMPTS.map((prompt) => (
                     <button
                       key={prompt.label}
                       type="button"
                       className="btn-sm"
-                      onClick={() => {
-                        setInput(prompt.text);
-                        textareaRef.current?.focus();
-                      }}
+                      onClick={() => useQuickPrompt(prompt.text)}
                     >
                       {prompt.label}
                     </button>
@@ -362,51 +463,68 @@ export default function ChatPage() {
         <div className="composer">
           <div className="composer-inner">
             {roleplayActive && (
-              <div className="row" style={{ justifyContent: 'space-between' }}>
-                <span className="badge badge-rep">ロールプレイ中：AIは顧客役です</span>
+              <div className="spread">
+                <span className="badge badge-rep">ロールプレイ中：AIは顧客役</span>
                 <button type="button" className="btn-sm" onClick={endRoleplay} disabled={busy}>
-                  終了してフィードバックを受ける
+                  終了して講評
                 </button>
               </div>
             )}
-            <textarea
-              ref={textareaRef}
-              value={input}
-              placeholder={
-                roleplayActive
-                  ? '顧客への発言を入力（Ctrl+Enterで送信）'
-                  : '商談メモ・文字起こし・相談内容を入力（Ctrl+Enterで送信）'
-              }
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-                  e.preventDefault();
-                  void send(input);
-                }
-              }}
-            />
-            <div className="spread">
-              <span className="faint">
-                {selectedCustomer ? `対象顧客：${selectedCustomer.displayName}` : '顧客未選択'}
-              </span>
+
+            <div className="composer-row">
+              <textarea
+                ref={textareaRef}
+                rows={1}
+                value={input}
+                placeholder={roleplayActive ? '顧客への発言を入力' : '商談メモ・相談内容を入力'}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  // PCのキーボード向けのショートカット。スマートフォンでは改行のまま。
+                  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    void send(input);
+                  }
+                }}
+              />
               <button
                 type="button"
-                className="btn-primary"
+                className="btn-primary composer-send"
+                aria-label="送信"
                 disabled={busy || !input.trim()}
                 onClick={() => void send(input)}
               >
-                送信
+                <IconSend />
               </button>
+            </div>
+
+            <div className="composer-meta desktop-only">
+              <span className="faint">
+                {selectedCustomer ? `対象顧客：${selectedCustomer.displayName}` : '顧客未選択'}
+              </span>
+              <span className="faint">Ctrl+Enter で送信</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* 設定パネル */}
-      <div className="chat-side">
-        <div className="nav-label">この相談の設定</div>
+      <div className="chat-pane chat-pane-side" data-open={pane === 'side'}>
+        <div className="sheet-grip" />
+        <div className="sheet-head">
+          <h2 className="sheet-title mobile-only">この相談の設定</h2>
+          <button
+            type="button"
+            className="btn-icon sheet-close mobile-only"
+            aria-label="閉じる"
+            onClick={() => setPane('none')}
+          >
+            <IconClose />
+          </button>
+        </div>
 
-        <label className="field" style={{ marginBottom: 10 }}>
+        <div className="nav-label desktop-only">この相談の設定</div>
+
+        <label className="field" style={{ marginBottom: 12 }}>
           <span>対象顧客</span>
           <select value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
             <option value="">選択しない</option>
@@ -418,7 +536,7 @@ export default function ChatPage() {
           </select>
         </label>
 
-        <label className="field" style={{ marginBottom: 10 }}>
+        <label className="field" style={{ marginBottom: 12 }}>
           <span>モード</span>
           <select value={mode} onChange={(e) => setMode(e.target.value as Mode | '')}>
             <option value="">自動判定</option>
@@ -434,7 +552,7 @@ export default function ChatPage() {
           ロールプレイ
         </div>
         {!roleplayActive && !showRoleplayForm && (
-          <button type="button" style={{ width: '100%' }} onClick={() => setShowRoleplayForm(true)}>
+          <button type="button" className="btn-block" onClick={() => setShowRoleplayForm(true)}>
             設定して開始する
           </button>
         )}

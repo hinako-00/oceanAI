@@ -122,7 +122,7 @@ export default function KnowledgePage() {
         {error && <div className="alert alert-error" style={{ marginBottom: 10 }}>{error}</div>}
         <button
           type="button"
-          className="btn-primary"
+          className="btn-primary btn-block"
           onClick={add}
           disabled={!form.title.trim() || !form.body.trim()}
         >
@@ -144,13 +144,18 @@ export default function KnowledgePage() {
                 <div className="pre-wrap" style={{ marginTop: 8 }}>
                   {item.body}
                 </div>
-                <div className="spread" style={{ marginTop: 8 }}>
-                  <span className="faint">
+                <div className="spread" style={{ marginTop: 10, alignItems: 'flex-start' }}>
+                  <span className="faint" style={{ minWidth: 0 }}>
                     {item.tags.join(' / ')}
                     {item.tags.length > 0 && ' ／ '}登録者: {userName(item.createdBy)}
                   </span>
                   {canDelete(item) && (
-                    <button type="button" className="btn-danger btn-sm" onClick={() => remove(item.id)}>
+                    <button
+                      type="button"
+                      className="btn-danger btn-sm"
+                      style={{ flex: 'none' }}
+                      onClick={() => remove(item.id)}
+                    >
                       削除
                     </button>
                   )}

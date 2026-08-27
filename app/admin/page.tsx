@@ -104,7 +104,7 @@ export default function AdminPage() {
         </div>
         <button
           type="button"
-          className="btn-primary"
+          className="btn-primary btn-block"
           onClick={add}
           disabled={!form.name.trim() || !form.email.trim() || form.password.length < 10}
         >
@@ -114,7 +114,7 @@ export default function AdminPage() {
 
       <div className="card">
         <h2 className="card-title">登録済み（{users.length}名）</h2>
-        <table>
+        <table className="cards">
           <thead>
             <tr>
               <th>氏名</th>
@@ -128,29 +128,35 @@ export default function AdminPage() {
           <tbody>
             {users.map((user) => (
               <tr key={user.id}>
-                <td>{user.name}</td>
-                <td className="faint">{user.email}</td>
-                <td>
+                <td data-head="">
+                  <strong>{user.name}</strong>
+                  <div className="faint">{user.email}</div>
+                </td>
+                <td className="faint desktop-cell" data-label="メール">
+                  {user.email}
+                </td>
+                <td data-label="役割">
                   <select
                     value={user.role}
                     onChange={(e) =>
                       patch(user.id, { role: e.target.value }, `${user.name} さんの役割を変更しました。`)
                     }
-                    style={{ maxWidth: 130 }}
                   >
                     <option value="member">{USER_ROLE_LABEL.member}</option>
                     <option value="admin">{USER_ROLE_LABEL.admin}</option>
                   </select>
                 </td>
-                <td>
+                <td data-label="状態">
                   {user.active ? (
                     <span className="badge badge-confirmed">有効</span>
                   ) : (
                     <span className="badge badge-unconfirmed">無効</span>
                   )}
                 </td>
-                <td className="faint">{user.lastLoginAt ? formatDate(user.lastLoginAt) : '—'}</td>
-                <td>
+                <td className="faint" data-label="最終ログイン">
+                  {user.lastLoginAt ? formatDate(user.lastLoginAt) : '—'}
+                </td>
+                <td data-label="操作">
                   {resetting === user.id ? (
                     <div className="row">
                       <input
@@ -158,7 +164,7 @@ export default function AdminPage() {
                         value={resetPassword}
                         placeholder="新しいパスワード"
                         onChange={(e) => setResetPassword(e.target.value)}
-                        style={{ maxWidth: 200 }}
+                        style={{ flex: '1 1 160px', minWidth: 0 }}
                       />
                       <button
                         type="button"

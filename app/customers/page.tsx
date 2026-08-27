@@ -69,43 +69,37 @@ export default function CustomersPage() {
             placeholder="会社名または顧客名"
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && create()}
-            style={{ maxWidth: 320 }}
+            style={{ flex: '1 1 200px', minWidth: 0 }}
           />
           <button type="button" className="btn-primary" onClick={create} disabled={!name.trim()}>
             追加
           </button>
-          <span className="faint">担当者は自分になります（後から引き継げます）</span>
         </div>
+        <p className="faint" style={{ margin: '8px 0 0' }}>
+          担当者は自分になります（後から引き継げます）
+        </p>
       </div>
 
       {error && <div className="alert alert-error" style={{ marginTop: 12 }}>{error}</div>}
 
       <div className="card">
-        <div className="spread" style={{ marginBottom: 10 }}>
-          <h2 className="card-title" style={{ margin: 0 }}>
-            登録済み（{visible.length}件）
-          </h2>
-          <label className="row" style={{ gap: 6 }}>
-            <span className="faint">担当者</span>
-            <select
-              value={ownerFilter}
-              onChange={(e) => setOwnerFilter(e.target.value)}
-              style={{ maxWidth: 200 }}
-            >
-              <option value="all">すべて</option>
-              <option value="mine">自分の顧客</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+        <h2 className="card-title">登録済み（{visible.length}件）</h2>
+        <label className="field" style={{ marginBottom: 12 }}>
+          <span>担当者でしぼり込む</span>
+          <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)}>
+            <option value="all">すべて</option>
+            <option value="mine">自分の顧客</option>
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.name}
+              </option>
+            ))}
+          </select>
+        </label>
         {visible.length === 0 ? (
           <div className="empty">該当する顧客がありません。</div>
         ) : (
-          <table>
+          <table className="cards">
             <thead>
               <tr>
                 <th>顧客</th>
@@ -122,28 +116,30 @@ export default function CustomersPage() {
                 const temperature = customer.fields.temperature;
                 return (
                   <tr key={customer.id}>
-                    <td>
-                      <Link href={`/customers/${customer.id}`} style={{ color: 'var(--accent)', fontWeight: 600 }}>
+                    <td data-head="">
+                      <Link href={`/customers/${customer.id}`} style={{ color: 'var(--accent)', fontWeight: 700 }}>
                         {customer.displayName}
                       </Link>
                     </td>
-                    <td className="owner-tag">
+                    <td className="owner-tag" data-label="担当者">
                       {ownerName(customer.ownerRepId)}
                       {customer.ownerRepId === me?.id && <span className="badge badge-rep"> 自分</span>}
                     </td>
-                    <td>
+                    <td data-label={CUSTOMER_FIELD_LABEL.coreIssue}>
                       {issue ? (
-                        <>
+                        <span>
                           {issue.value}
                           <div className="faint">{FACT_SOURCE_LABEL[issue.source]}</div>
-                        </>
+                        </span>
                       ) : (
                         <span className="badge badge-unconfirmed">未確認</span>
                       )}
                     </td>
-                    <td>{temperature?.value ?? <span className="badge badge-unconfirmed">未確認</span>}</td>
-                    <td>{customer.openQuestions.length}件</td>
-                    <td className="faint">{formatDate(customer.updatedAt)}</td>
+                    <td data-label={CUSTOMER_FIELD_LABEL.temperature}>
+                      {temperature?.value ?? <span className="badge badge-unconfirmed">未確認</span>}
+                    </td>
+                    <td data-label="未確認">{customer.openQuestions.length}件</td>
+                    <td className="faint" data-label="更新">{formatDate(customer.updatedAt)}</td>
                   </tr>
                 );
               })}

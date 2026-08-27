@@ -119,7 +119,7 @@ export default function ProfilePage() {
           <textarea rows={2} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
         </label>
         <div className="row">
-          <button type="button" className="btn-primary" onClick={save}>
+          <button type="button" className="btn-primary" style={{ flex: '1 1 auto' }} onClick={save}>
             保存
           </button>
           {saved && <span className="badge badge-confirmed">保存しました</span>}
@@ -161,6 +161,7 @@ export default function ProfilePage() {
         {passwordMessage && <div className="alert alert-warn" style={{ marginBottom: 10 }}>{passwordMessage}</div>}
         <button
           type="button"
+          className="btn-block"
           onClick={changePassword}
           disabled={!password.current || !password.next}
         >
@@ -169,12 +170,13 @@ export default function ProfilePage() {
       </div>
 
       <div className="card">
-        <div className="spread" style={{ marginBottom: 8 }}>
+        <div className="spread" style={{ marginBottom: 10, flexWrap: 'wrap' }}>
           <h2 className="card-title" style={{ margin: 0 }}>
             蓄積された傾向（{total}件）
           </h2>
           <button
             type="button"
+            className="btn-sm"
             onClick={() => {
               sessionStorage.setItem(
                 'ocean:prefill',

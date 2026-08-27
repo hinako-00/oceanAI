@@ -53,8 +53,8 @@ export default function TendencyList({
               {TENDENCY_CATEGORY_LABEL[category]}
             </div>
             {list.map((tendency) => (
-              <div key={tendency.id} className="spread" style={{ padding: '6px 0', alignItems: 'flex-start' }}>
-                <div>
+              <div key={tendency.id} className="spread" style={{ padding: '8px 0', alignItems: 'flex-start' }}>
+                <div style={{ minWidth: 0 }}>
                   <span className="badge">{SKILL_AXIS_LABEL[tendency.axis]}</span>{' '}
                   <span className={CONFIDENCE_CLASS[tendency.confidence]}>
                     信頼度 {CONFIDENCE_LABEL[tendency.confidence]}
@@ -67,7 +67,12 @@ export default function TendencyList({
                   </div>
                 </div>
                 {onDelete && (
-                  <button type="button" className="btn-danger btn-sm" onClick={() => onDelete(tendency.id)}>
+                  <button
+                    type="button"
+                    className="btn-danger btn-sm"
+                    style={{ flex: 'none' }}
+                    onClick={() => onDelete(tendency.id)}
+                  >
                     削除
                   </button>
                 )}
