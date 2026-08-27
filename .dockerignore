@@ -1,0 +1,13 @@
+node_modules
+.next
+.test-build
+.git
+.github
+# 顧客情報はイメージに含めない。実行時はボリュームから読み書きする。
+data
+.env
+.env.local
+*.local
+npm-debug.log*
+README.md
+DEPLOY.md

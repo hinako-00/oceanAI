@@ -1,0 +1,27 @@
+# HTTPSの終端。証明書の取得・更新はCaddyが自動で行う。
+# 80番へのアクセスは443へリダイレクトされる（Caddyの既定動作）。
+{$OCEAN_DOMAIN} {
+	tls {$OCEAN_TLS_EMAIL}
+
+	encode gzip
+
+	# 社内利用のみに限定する場合は、次の2行のコメントを外してIP範囲を書く。
+	# @notinternal not remote_ip 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+	# respond @notinternal "Forbidden" 403
+
+	header {
+		# HTTPSを強制する（HSTS）。動作確認が済むまではコメントアウトしておくとよい。
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "same-origin"
+		-Server
+	}
+
+	reverse_proxy app:3000 {
+		# アプリ側が本来のホスト名とプロトコルを認識できるようにする。
+		header_up X-Forwarded-Proto {scheme}
+		# AIの応答はストリーミングのため、バッファリングを無効にする。
+		flush_interval -1
+	}
+}

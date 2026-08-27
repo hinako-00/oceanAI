@@ -1,0 +1,27 @@
+# Dockerを使わない場合の systemd ユニット。
+# 配置: /etc/systemd/system/ocean-ai.service
+# 反映: sudo systemctl daemon-reload && sudo systemctl enable --now ocean-ai
+[Unit]
+Description=Ocean AI (AI営業コーチ)
+After=network.target
+
+[Service]
+Type=simple
+User=ocean
+Group=ocean
+WorkingDirectory=/opt/ocean-ai
+# 環境変数はこのファイルに書く（chmod 600 で root と ocean のみ読める状態にする）
+EnvironmentFile=/etc/ocean-ai.env
+ExecStart=/usr/bin/node /opt/ocean-ai/.next/standalone/server.js
+Restart=always
+RestartSec=5
+
+# 書き込みを許可するのはデータディレクトリだけに絞る。
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+NoNewPrivileges=true
+ReadWritePaths=/var/lib/ocean-ai
+
+[Install]
+WantedBy=multi-user.target

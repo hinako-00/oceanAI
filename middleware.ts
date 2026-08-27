@@ -7,7 +7,15 @@ import { SESSION_COOKIE } from '@/lib/auth-constants';
  * 未ログインのアクセスを入口で止める。
  * Cookieの有無だけを見て振り分け、セッションの有効性は各APIの requireUser() が確認する。
  */
-const PUBLIC_PATHS = ['/login', '/setup', '/api/auth/login', '/api/auth/logout', '/api/auth/setup'];
+const PUBLIC_PATHS = [
+  '/login',
+  '/setup',
+  '/api/auth/login',
+  '/api/auth/logout',
+  '/api/auth/setup',
+  // 死活監視はロードバランサやコンテナのヘルスチェックから叩かれるため公開する。
+  '/api/health',
+];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

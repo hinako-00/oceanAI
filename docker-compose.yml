@@ -1,0 +1,43 @@
+# ============================================================
+# 本番構成: Caddy（HTTPS終端）→ app（Next.js）
+# Caddy が Let's Encrypt の証明書を自動取得・自動更新する。
+# 起動:  docker compose up -d
+# ============================================================
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      # .env に書いた値が読み込まれる（.env.example を参照）
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?ANTHROPIC_API_KEY を .env に設定してください}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5}
+      ANTHROPIC_MAX_TOKENS: ${ANTHROPIC_MAX_TOKENS:-8000}
+      DATA_DIR: /data
+      NODE_ENV: production
+    volumes:
+      # 顧客情報・商談履歴・アカウント情報の保存先。ここがバックアップ対象。
+      - ocean-data:/data
+    # 外部へは直接公開せず、Caddy経由でのみアクセスさせる。
+    expose:
+      - '3000'
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      OCEAN_DOMAIN: ${OCEAN_DOMAIN:?公開するドメイン名を .env の OCEAN_DOMAIN に設定してください}
+      OCEAN_TLS_EMAIL: ${OCEAN_TLS_EMAIL:?証明書の通知先メールを .env の OCEAN_TLS_EMAIL に設定してください}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+
+volumes:
+  ocean-data:
+  caddy-data:
+  caddy-config:

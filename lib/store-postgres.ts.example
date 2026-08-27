@@ -1,0 +1,140 @@
+/**
+ * PostgreSQL 版の永続化層（テンプレート）。
+ *
+ * 使い方:
+ *   1. npm install pg && npm install -D @types/pg
+ *   2. 下部のSQLでテーブルを作成する
+ *   3. このファイルを lib/store.ts にリネームして置き換える（元のファイルは残しておく）
+ *   4. DATABASE_URL を環境変数に設定する
+ *
+ * 設計:
+ *   1コレクション = 1行のJSONB。mutate() のたびに SELECT ... FOR UPDATE 相当の行ロックを取り、
+ *   読み取り→更新→書き込みをトランザクションで囲む。
+ *   これにより、複数のアプリインスタンスから同時に更新しても壊れない。
+ *   JSONファイル版と同じインターフェースなので、repo.ts より上は変更不要。
+ *
+ * 注意:
+ *   コレクションが数万件規模になったら、テーブルを正規化して部分更新に切り替えること
+ *   （この実装はコレクション全体を毎回読み書きする）。
+ */
+import 'server-only';
+import { randomUUID } from 'node:crypto';
+import { Pool } from 'pg';
+
+import type {
+  AuthSession,
+  Customer,
+  Knowledge,
+  Meeting,
+  NextAction,
+  Session,
+  UpdateProposal,
+  User,
+} from './types';
+
+interface Schema {
+  customers: Customer[];
+  meetings: Meeting[];
+  users: User[];
+  knowledge: Knowledge[];
+  sessions: Session[];
+  proposals: UpdateProposal[];
+  nextActions: NextAction[];
+  authSessions: AuthSession[];
+}
+
+type Collection = keyof Schema;
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  // 本番のマネージドDBではTLSが必須なことが多い。
+  ssl: process.env.PGSSL === 'false' ? undefined : { rejectUnauthorized: false },
+  max: Number(process.env.PGPOOL_MAX ?? 10),
+});
+
+export function newId(): string {
+  return randomUUID();
+}
+
+export function now(): string {
+  return new Date().toISOString();
+}
+
+export async function readAll<K extends Collection>(collection: K): Promise<Schema[K]> {
+  const result = await pool.query<{ rows: Schema[K] }>(
+    'SELECT rows FROM collections WHERE name = $1',
+    [collection],
+  );
+  return (result.rows[0]?.rows ?? []) as Schema[K];
+}
+
+/**
+ * コレクションを読み込み、更新関数を適用して書き戻す。
+ * トランザクション内で行ロックを取るため、同時更新は到着順に直列化される。
+ */
+export async function mutate<K extends Collection, R>(
+  collection: K,
+  fn: (rows: Schema[K]) => R | Promise<R>,
+): Promise<R> {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // 行がなければ作り、あればロックを取って現在値を読む。
+    const locked = await client.query<{ rows: Schema[K] }>(
+      `INSERT INTO collections (name, rows) VALUES ($1, '[]'::jsonb)
+       ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+       RETURNING rows`,
+      [collection],
+    );
+
+    const rows = (locked.rows[0]?.rows ?? []) as Schema[K];
+    const result = await fn(rows);
+
+    await client.query(
+      'UPDATE collections SET rows = $2::jsonb, updated_at = now() WHERE name = $1',
+      [collection, JSON.stringify(rows)],
+    );
+    await client.query('COMMIT');
+    return result;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+export async function findById<K extends Collection>(
+  collection: K,
+  id: string,
+): Promise<Schema[K][number] | undefined> {
+  const rows = await readAll(collection);
+  return (rows as Array<{ id: string }>).find((row) => row.id === id) as
+    | Schema[K][number]
+    | undefined;
+}
+
+/* ============================================================
+   初期化SQL（psql で1度だけ実行する）
+
+   CREATE TABLE IF NOT EXISTS collections (
+     name       text PRIMARY KEY,
+     rows       jsonb NOT NULL DEFAULT '[]'::jsonb,
+     updated_at timestamptz NOT NULL DEFAULT now()
+   );
+
+   -- JSONファイルからの移行（data/*.json を読み込む例）
+   -- node -e "
+   --   const fs=require('fs'),{Pool}=require('pg');
+   --   const map={'customers.json':'customers','meetings.json':'meetings','users.json':'users',
+   --     'knowledge.json':'knowledge','sessions.json':'sessions','proposals.json':'proposals',
+   --     'next-actions.json':'nextActions','auth-sessions.json':'authSessions'};
+   --   const pool=new Pool({connectionString:process.env.DATABASE_URL});
+   --   (async()=>{for(const[f,c]of Object.entries(map)){
+   --     let rows=[];try{rows=JSON.parse(fs.readFileSync('data/'+f,'utf8'))}catch{}
+   --     await pool.query('INSERT INTO collections(name,rows) VALUES(\$1,\$2::jsonb)
+   --       ON CONFLICT(name) DO UPDATE SET rows=EXCLUDED.rows',[c,JSON.stringify(rows)]);
+   --     console.log(c,rows.length);}
+   --   await pool.end()})()"
+   ============================================================ */

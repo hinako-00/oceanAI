@@ -30,6 +30,17 @@ export {
 
 const SESSION_DAYS = 30;
 
+/**
+ * Cookieに Secure を付けるか。
+ * 既定は本番（NODE_ENV=production）で有効。HTTPSでない環境ではブラウザがCookieを保存せず
+ * ログインできなくなるため、社内LANのHTTP運用に限り COOKIE_SECURE=false で明示的に外せる。
+ */
+function useSecureCookie(): boolean {
+  if (process.env.COOKIE_SECURE === 'false') return false;
+  if (process.env.COOKIE_SECURE === 'true') return true;
+  return process.env.NODE_ENV === 'production';
+}
+
 // --- ログインセッション -----------------------------------------------------
 
 function hashToken(token: string): string {
@@ -57,7 +68,7 @@ export async function createLoginSession(userId: string): Promise<string> {
   store.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure: useSecureCookie(),
     path: '/',
     maxAge: SESSION_DAYS * 24 * 60 * 60,
   });
