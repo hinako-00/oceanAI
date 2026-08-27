@@ -23,10 +23,18 @@ Netlifyダッシュボードからリポジトリを連携するだけで、以�
 1. `https://app.netlify.com/projects/ocean-ai-sales-coach` を開く
 2. **Project configuration → Build & deploy → Link repository**（またはトップの「Link repository」ボタン）
 3. GitHub を選び、`hinako-00/oceanAI` を選択
+   （Netlifyのログインと連携先のGitHubアカウントは別で構いません。認可画面ではリポジトリの
+   オーナー〈`hinako-00`〉でログインしてください）
 4. デプロイ元ブランチに `claude/ai-sales-coach-app-hs8npk` を指定
    （ビルドコマンドと使用するプラグインは `netlify.toml` に書いてあるので、追加設定は不要です）
-5. **Site configuration → Environment variables** で `ANTHROPIC_API_KEY` を追加
-   （[Anthropic Console](https://console.anthropic.com/) で発行したキー。他の変数は設定済みです）
+5. **（任意）** `ANTHROPIC_API_KEY` を設定する場合は **Site configuration → Environment variables** で追加
+   （[Anthropic Console](https://console.anthropic.com/) で発行したキー。他の変数は設定済みです）。
+   **設定しなくてもデプロイして画面を確認できます。** 課金が発生するのはAPIキーを設定した
+   うえで実際にAIコーチへメッセージを送ったときだけです。未設定のままだと、AIコーチとの
+   チャット・ロールプレイだけが「未設定です」という案内になり、それ以外（ログイン、顧客カルテ、
+   商談記録、メンバー管理、次回行動、自社営業知識）は普通に確認できます。
+   後から試したくなったら、環境変数を追加して次のステップの「Trigger deploy」をやり直すだけで
+   反映されます（コードの変更は不要）。
 6. **Deploys → Trigger deploy** でビルドを開始する
 
 数分後に `https://ocean-ai-sales-coach.netlify.app` が使えるようになります。
@@ -80,8 +88,9 @@ Netlifyのサーバーレス関数はリクエストごとに実行環境が使�
 1. 最初の管理者アカウントを作成
 2. 「メンバー管理」でチームメンバーを追加（すり合わせに参加する人数分）
 3. 「自社営業知識」にサンプルの商品情報を1つ登録
-4. 「商談を記録」でサンプルの商談メモを1件登録し、AIに振り返らせてみる
-   （`ANTHROPIC_API_KEY` を設定していないとこのステップだけ失敗します）
+4. 「商談を記録」でサンプルの商談メモを1件登録する
+5. **（`ANTHROPIC_API_KEY` を設定した場合のみ）** 登録した商談をAIに振り返らせてみる。
+   未設定の場合はここまでの画面・操作感の確認で一区切りにしてください。
 
 ## 確認が終わったら
 
