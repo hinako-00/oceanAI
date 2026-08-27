@@ -19,6 +19,8 @@
     "node_modules",
     "app",
     "lib/store.ts",
+    "lib/store-file.ts",
+    "lib/store-blobs.ts",
     "lib/repo.ts",
     "lib/apply.ts",
     "lib/anthropic.ts",

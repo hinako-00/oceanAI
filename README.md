@@ -35,6 +35,9 @@ npm run dev                  # http://localhost:3000
 APIキーは [Anthropic Console](https://console.anthropic.com/) で発行します。
 キーが未設定でも画面は開きますが、AIの応答だけが使えません。
 
+チームで使えるURLとして公開する場合は [DEPLOY.md](./DEPLOY.md)（自前サーバー・Docker運用、HTTPS化）
+または [NETLIFY.md](./NETLIFY.md)（Netlifyへのデプロイ、確認・すり合わせ向け）を参照してください。
+
 | 環境変数 | 既定値 | 説明 |
 | --- | --- | --- |
 | `ANTHROPIC_API_KEY` | （必須） | Claude API のキー |

@@ -15,3 +15,6 @@ data/*.json
 .DS_Store
 npm-debug.log*
 .test-build/
+
+# Netlify CLI のローカルキャッシュ（コーディング指針により対象外にする）
+.netlify

@@ -1,0 +1,10 @@
+# Netlifyへのデプロイ設定。
+# データの永続化には Netlify Blobs を使う（lib/store-blobs.ts）。
+# JSONファイル保存（lib/store-file.ts）はNetlify上では使えない
+# ── サーバーレス関数はリクエストごとに実行環境が使い捨てられ、書いたファイルが残らないため。
+
+[build]
+  command = "npm run build"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
