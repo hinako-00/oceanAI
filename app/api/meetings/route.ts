@@ -30,7 +30,7 @@ export async function POST(request: Request) {
       rawInput?: string;
       outcome?: string;
     };
-    if (!body.customerId) throw new Error('顧客を選択してください。');
+    if (!body.customerId) throw new Error('クライアントを選択してください。');
     if (!body.rawInput?.trim()) throw new Error('アポメモまたは文字起こしを入力してください。');
 
     const meeting = await addMeeting({

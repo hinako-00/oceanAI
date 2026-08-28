@@ -136,7 +136,7 @@ export interface NavLink {
 
 export const NAV_LINKS: NavLink[] = [
   { href: '/', label: 'コーチと相談', short: '相談', exact: true, icon: IconChat },
-  { href: '/customers', label: '顧客情報', short: '顧客', icon: IconCustomers },
+  { href: '/customers', label: 'クライアント情報', short: 'クライアント', icon: IconCustomers },
   { href: '/meetings', label: 'アポを記録', short: 'アポ', icon: IconMeetings },
   { href: '/actions', label: '次回行動', short: '行動', icon: IconActions },
   { href: '/members', label: 'チームの傾向', short: '傾向', icon: IconMembers },

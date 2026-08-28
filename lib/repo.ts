@@ -108,7 +108,7 @@ export async function deleteTendency(userId: string, tendencyId: string): Promis
   });
 }
 
-// --- 顧客 -------------------------------------------------------------------
+// --- クライアント -------------------------------------------------------------------
 
 export async function listCustomers(): Promise<Customer[]> {
   const rows = await readAll('customers');

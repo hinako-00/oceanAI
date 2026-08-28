@@ -2,14 +2,14 @@
  * ドメイン型定義
  *
  * 設計上の最重要ルール:
- * 顧客に関するあらゆる情報は「誰が言ったか（情報源）」を必ず持つ。
+ * クライアントに関するあらゆる情報は「誰が言ったか（情報源）」を必ず持つ。
  * 確認済みの事実 / 営業担当者からの報告 / AIによる仮説 を混同させないため、
  * value と source を分離できない構造にしている。
  */
 
 /** 情報源の区別。UI・保存・出力のすべてでこの区別を維持する。 */
 export type FactSource =
-  | 'confirmed' // 確認済みの事実（顧客が明確に発言した内容）
+  | 'confirmed' // 確認済みの事実（クライアントが明確に発言した内容）
   | 'rep_report' // 営業担当者からの報告（担当者の解釈を含む）
   | 'ai_hypothesis' // AIによる仮説
   | 'unconfirmed'; // 未確認（推測で埋めない）
@@ -21,7 +21,7 @@ export const FACT_SOURCE_LABEL: Record<FactSource, string> = {
   unconfirmed: '未確認',
 };
 
-/** 顧客情報の1項目。 */
+/** クライアント情報の1項目。 */
 export interface CustomerField {
   value: string;
   source: FactSource;
@@ -30,59 +30,110 @@ export interface CustomerField {
   updatedAt: string;
 }
 
-/** 顧客情報の項目キー（仕様の「顧客情報の整理」に対応）。 */
+/** クライアント情報の項目キー（仕様の「クライアント情報の整理」に対応）。 */
 export type CustomerFieldKey =
-  | 'customerName'
-  | 'companyName'
-  | 'demographics'
-  | 'leadSource'
-  | 'currentSituation'
-  | 'surfaceRequest'
-  | 'coreIssue'
+  | 'gender'
+  | 'age'
+  | 'industry'
+  | 'mbti'
+  | 'personality'
   | 'idealState'
-  | 'impactIfIgnored'
-  | 'triedSolutions'
-  | 'productInterest'
+  | 'reasoning'
+  | 'approach'
+  | 'reference'
   | 'concerns'
-  | 'budget'
-  | 'timeline'
-  | 'decisionMakers'
-  | 'competitors'
-  | 'trustLevel'
-  | 'temperature'
-  | 'nextPromise'
-  | 'nextAction';
+  | 'groundwork'
+  | 'result'
+  | 'summary';
 
 /**
  * ヒアリング項目の表示名。
  *
- * 個人のお客様（toC）向けの営業を前提にした言い回しにしている。
- * キー（customerName や companyName など）は保存済みデータと結びついているため変えない。
- * 変えてよいのは表示名だけ。
+ * ここに並べた順がそのまま画面の表示順になる（CUSTOMER_FIELD_KEYS が
+ * このオブジェクトのキー順から作られるため）。アポの流れに沿った順序にしてある。
+ *
+ * キーは保存済みデータと結びついている。表示名を変えるのは自由だが、
+ * キーを変えると既存のクライアント情報が読めなくなるので変えないこと。
+ * idealState と concerns は以前からあるキーを意味が同じなので引き継いでいる。
  */
 export const CUSTOMER_FIELD_LABEL: Record<CustomerFieldKey, string> = {
-  customerName: 'お名前',
-  // 個人が相手でも、勤め先や働き方は提案の前提になる（勤務形態・収入の安定性など）。
-  companyName: 'ご職業・勤務先',
-  demographics: '年齢層・家族構成・お住まい',
-  leadSource: '知ったきっかけ（広告・紹介・SNSなど）',
-  currentSituation: '現在の状況',
-  surfaceRequest: '表面的なご要望',
-  coreIssue: '本質的な課題',
-  idealState: '理想の状態',
-  impactIfIgnored: 'このままだとどうなるか',
-  triedSolutions: 'これまで試したこと',
-  productInterest: '商品・サービスへの関心',
-  concerns: '不安・迷い・反論',
-  budget: 'ご予算・出せる金額',
-  timeline: '購入・開始したい時期',
-  // 個人の購入判断は本人だけで完結しないことが多い（配偶者・親など）。
-  decisionMakers: '相談される相手（ご家族など）',
-  competitors: '比較検討している他社',
-  trustLevel: '信頼関係の状態',
-  temperature: '検討の温度感',
-  nextPromise: '次回のお約束',
-  nextAction: '次回アクション',
+  gender: '性別',
+  age: '年齢',
+  industry: '業種',
+  mbti: 'MBTI',
+  personality: '性格',
+  idealState: '理想',
+  reasoning: '理由付け',
+  approach: '自分の売り方',
+  reference: 'Aさん提示',
+  concerns: '懸念',
+  groundwork: '布石',
+  result: '結果',
+  summary: '総括',
+};
+
+/**
+ * アポの着地。
+ *
+ * クライアント情報の「結果」と、アポ記録の「結果」で同じ語彙を使う。
+ * 別々に持つと表記が割れて、あとから集計できなくなる。
+ */
+export const MEETING_OUTCOMES: string[] = ['外し', '繋ぎ', '再アポ'];
+
+/**
+ * 選択式の項目の選択肢。
+ *
+ * ここに載っている項目は、編集画面で自由入力ではなくプルダウンになる。
+ * 表記が揺れると集計や絞り込みができなくなるため、決まった言葉で持つ項目は
+ * 選択式にする。
+ */
+export const CUSTOMER_FIELD_OPTIONS: Partial<Record<CustomerFieldKey, string[]>> = {
+  gender: ['男性', '女性', 'その他', '未回答'],
+  industry: [
+    '会社員（事務）',
+    '会社員（営業）',
+    '会社員（技術・専門）',
+    '公務員・団体職員',
+    '医療・福祉',
+    '教育・保育',
+    '飲食・宿泊',
+    '販売・小売',
+    '美容・理容',
+    '建設・不動産',
+    '製造',
+    '運輸・物流',
+    'IT・通信',
+    '金融・保険',
+    '士業・コンサル',
+    '経営者・役員',
+    '自営業・フリーランス',
+    '学生',
+    '主婦・主夫',
+    'パート・アルバイト',
+    '無職・求職中',
+    'その他',
+  ],
+  mbti: [
+    'INTJ', 'INTP', 'ENTJ', 'ENTP',
+    'INFJ', 'INFP', 'ENFJ', 'ENFP',
+    'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ',
+    'ISTP', 'ISFP', 'ESTP', 'ESFP',
+    '未診断',
+  ],
+  // アポの着地。この3つで次の動き方が決まる。
+  result: MEETING_OUTCOMES,
+};
+
+/** 入力のときの補足説明。何を書けばよいか分からない項目に添える。 */
+export const CUSTOMER_FIELD_HINT: Partial<Record<CustomerFieldKey, string>> = {
+  personality: '話し方や反応から読み取れた人柄。決め方の癖（即決型・熟考型など）も。',
+  idealState: 'このクライアントが本当はどうなりたいのか。',
+  reasoning: 'なぜそれが必要なのかを、どう理由づけて伝えたか。',
+  approach: 'このクライアントに対して自分が取った売り方・進め方。',
+  reference: '「Aさん」として提示した事例と、その反応。',
+  concerns: '相手が引っかかっている点。金額・時期・家族への相談など。',
+  groundwork: '次につなげるために今回打っておいた布石。',
+  summary: 'このアポ全体の総括。次に活かすこと。',
 };
 
 export const CUSTOMER_FIELD_KEYS = Object.keys(CUSTOMER_FIELD_LABEL) as CustomerFieldKey[];
@@ -159,7 +210,7 @@ export const SKILL_AXIS_LABEL: Record<SkillAxis, string> = {
   pricing: '価格交渉',
   closing: 'クロージング',
   nextAction: '次回行動の設定',
-  adaptation: 'お客様のタイプへの適応',
+  adaptation: 'クライアントのタイプへの適応',
   compliance: 'コンプライアンス意識',
 };
 
@@ -169,8 +220,8 @@ export type TendencyCategory =
   | 'strength' // 現在の強み
   | 'habit' // 繰り返している癖
   | 'improve' // 改善すべき行動
-  | 'goodFit' // 得意と考えられる顧客属性
-  | 'hardFit' // 苦手と考えられる顧客属性
+  | 'goodFit' // 得意と考えられるクライアントの属性
+  | 'hardFit' // 苦手と考えられるクライアントの属性
   | 'nextTry' // 次回試す具体的な行動
   | 'change'; // 前回の改善課題からの変化
 
@@ -178,8 +229,8 @@ export const TENDENCY_CATEGORY_LABEL: Record<TendencyCategory, string> = {
   strength: '現在の強み',
   habit: '繰り返している癖',
   improve: '改善すべき行動',
-  goodFit: '得意と考えられるお客様のタイプ',
-  hardFit: '苦手と考えられるお客様のタイプ',
+  goodFit: '得意と考えられるクライアントのタイプ',
+  hardFit: '苦手と考えられるクライアントのタイプ',
   nextTry: '次回試す具体的な行動',
   change: '前回の改善課題からの変化',
 };
@@ -249,7 +300,7 @@ export interface User {
   experienceYears: number;
   /** 担当商材。 */
   product: string;
-  /** 担当領域・顧客層。 */
+  /** 担当領域・クライアント層。 */
   territory: string;
   /** 本人が自覚している課題など。 */
   note: string;
@@ -304,10 +355,10 @@ export type Mode = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H';
 export const MODE_LABEL: Record<Mode, string> = {
   A: 'アポ前の準備',
   B: 'アポ後の振り返り',
-  C: '顧客情報の登録・更新',
+  C: 'クライアント情報の登録・更新',
   D: '営業相談・問題解決',
   E: '営業知識の学習',
-  F: 'お客様役とのロールプレイ',
+  F: 'クライアント役とのロールプレイ',
   G: '自分の営業傾向の確認',
   H: 'その他',
 };
@@ -319,7 +370,7 @@ export interface RoleplayConfig {
   stage: string;
   difficulty: '易しい' | '標準' | '難しい';
   focus: string;
-  /** true の間はAIはお客様役に徹し、途中で指導しない。 */
+  /** true の間はAIはクライアント役に徹し、途中で指導しない。 */
   active: boolean;
 }
 

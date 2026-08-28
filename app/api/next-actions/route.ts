@@ -6,7 +6,7 @@ import { addNextAction, listNextActions } from '@/lib/repo';
 
 export const dynamic = 'force-dynamic';
 
-/** scope=team でチーム全員の次回行動を返す（顧客が共有のため引き継ぎに使う）。 */
+/** scope=team でチーム全員の次回行動を返す（クライアントが共有のため引き継ぎに使う）。 */
 export async function GET(request: Request) {
   try {
     const user = await requireUser();

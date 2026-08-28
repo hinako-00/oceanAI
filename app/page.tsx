@@ -312,14 +312,14 @@ export default function ChatPage() {
 
   const startRoleplay = async () => {
     if (!roleplay.product.trim() || !roleplay.persona.trim()) {
-      setError('ロールプレイを始める前に、商材と顧客像を入力してください。');
+      setError('ロールプレイを始める前に、商材とクライアント像を入力してください。');
       return;
     }
     setRoleplayActive(true);
     setShowRoleplayForm(false);
     setPane('none');
     setMode('F');
-    await send('ロールプレイを開始します。お客様役として最初の一言をお願いします。', {
+    await send('ロールプレイを開始します。クライアント役として最初の一言をお願いします。', {
       action: 'start',
       config: roleplay,
     });
@@ -378,7 +378,7 @@ export default function ChatPage() {
             ? 'ロールプレイ中'
             : selectedCustomer
               ? selectedCustomer.displayName
-              : '顧客未選択'}
+              : 'クライアント未選択'}
         </span>
         <button
           type="button"
@@ -505,8 +505,8 @@ export default function ChatPage() {
               <div className="card" style={{ borderColor: 'var(--accent)' }}>
                 <h2 className="card-title">ロープレの設定</h2>
                 <p className="muted" style={{ margin: '0 0 12px' }}>
-                  ここで設定した内容でAIがお客様役になります。開始後は指導せず、
-                  お客様として受け答えします。対話モードに戻すと講評します。
+                  ここで設定した内容でAIがクライアント役になります。開始後は指導せず、
+                  クライアントとして受け答えします。対話モードに戻すと講評します。
                 </p>
                 <div className="stack">
                   <label className="field">
@@ -518,7 +518,7 @@ export default function ChatPage() {
                     />
                   </label>
                   <label className="field">
-                    <span>お客様像</span>
+                    <span>クライアント像</span>
                     <input
                       value={roleplay.persona}
                       onChange={(e) => setRoleplay({ ...roleplay, persona: e.target.value })}
@@ -601,7 +601,7 @@ export default function ChatPage() {
                 </div>
               ) : (
                 <div key={message.id} className="msg-ai">
-                  <div className="msg-role">AIコーチ{roleplayActive ? '（お客様役）' : ''}</div>
+                  <div className="msg-role">AIコーチ{roleplayActive ? '（クライアント役）' : ''}</div>
                   <div className="bubble">
                     <Formatted text={message.content} />
                   </div>
@@ -631,7 +631,7 @@ export default function ChatPage() {
                   setProposal(null);
                   const bootstrap = await reload();
                   if (result.status === 'applied' && !customerId && bootstrap.customers[0]) {
-                    // 新規作成された顧客を会話の対象にする。
+                    // 新規作成されたクライアントを会話の対象にする。
                     setCustomerId(result.customerId || bootstrap.customers[0].id);
                   }
                 }}
@@ -645,7 +645,7 @@ export default function ChatPage() {
           <div className="composer-inner">
             {roleplayActive && (
               <div className="spread">
-                <span className="badge badge-rep">ロールプレイ中：AIはお客様役</span>
+                <span className="badge badge-rep">ロールプレイ中：AIはクライアント役</span>
                 <button type="button" className="btn-sm" onClick={endRoleplay} disabled={busy}>
                   終了して講評
                 </button>
@@ -657,7 +657,7 @@ export default function ChatPage() {
                 ref={textareaRef}
                 rows={1}
                 value={input}
-                placeholder={roleplayActive ? 'お客様への発言を入力' : 'アポメモ・相談内容を入力'}
+                placeholder={roleplayActive ? 'クライアントへの発言を入力' : 'アポメモ・相談内容を入力'}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
                   // PCのキーボード向けのショートカット。スマートフォンでは改行のまま。
@@ -680,7 +680,7 @@ export default function ChatPage() {
 
             <div className="composer-meta desktop-only">
               <span className="faint">
-                {selectedCustomer ? `対象顧客：${selectedCustomer.displayName}` : '顧客未選択'}
+                {selectedCustomer ? `対象クライアント：${selectedCustomer.displayName}` : 'クライアント未選択'}
               </span>
               <span className="faint">Ctrl+Enter で送信</span>
             </div>
@@ -706,7 +706,7 @@ export default function ChatPage() {
         <div className="nav-label desktop-only">この相談の設定</div>
 
         <label className="field" style={{ marginBottom: 12 }}>
-          <span>対象顧客</span>
+          <span>対象クライアント</span>
           <select value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
             <option value="">選択しない</option>
             {data?.customers.map((customer) => (

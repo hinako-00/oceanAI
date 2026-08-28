@@ -17,7 +17,7 @@ import type {
 } from './types';
 
 /**
- * 保存候補（顧客情報・営業傾向・次回行動・社内知識の更新案）のスキーマと検証。
+ * 保存候補（クライアント情報・営業傾向・次回行動・社内知識の更新案）のスキーマと検証。
  *
  * モデルには本文とは別の「ツール呼び出し」として出させる。
  * 以前は本文の末尾に <<<SALES_UPDATE ... >>> という自前のブロックを書かせて
@@ -48,7 +48,7 @@ const SELECTABLE_SOURCES: FactSource[] = ['confirmed', 'rep_report', 'ai_hypothe
 export const SAVE_PROPOSAL_TOOL = {
   name: 'save_proposal',
   description:
-    'アポ記録や会話から読み取れた、顧客情報・営業傾向・次回行動・社内知識の更新案を登録する。' +
+    'アポ記録や会話から読み取れた、クライアント情報・営業傾向・次回行動・社内知識の更新案を登録する。' +
     'ここで渡した内容はまだ保存されず、担当者が画面で1件ずつ確認して承認したものだけが保存される。' +
     '本文の回答を書き終えたあとに呼ぶこと。更新案が何もない場合は呼ばなくてよい。',
   input_schema: {
@@ -56,16 +56,16 @@ export const SAVE_PROPOSAL_TOOL = {
     properties: {
       customerUpdate: {
         type: 'object',
-        description: '顧客情報の更新案。顧客に関する新情報がなければ fields と openQuestions を空配列にする。',
+        description: 'クライアント情報の更新案。クライアントに関する新情報がなければ fields と openQuestions を空配列にする。',
         properties: {
           customerId: {
             type: 'string',
             description:
-              '既存顧客を更新する場合、参照情報の【顧客情報】にある「顧客ID」をそのまま入れる。新規の顧客なら空文字。',
+              '既存クライアントを更新する場合、参照情報の【クライアント情報】にある「クライアントID」をそのまま入れる。新規のクライアントなら空文字。',
           },
           displayName: {
             type: 'string',
-            description: '顧客の表示名（会社名または顧客名）。分からなければ空文字。',
+            description: 'クライアントの表示名（会社名またはクライアント名）。分からなければ空文字。',
           },
           fields: {
             type: 'array',
@@ -80,7 +80,7 @@ export const SAVE_PROPOSAL_TOOL = {
                   type: 'string',
                   enum: SELECTABLE_SOURCES,
                   description:
-                    '顧客本人が明確に発言した内容だけ confirmed。担当者の解釈は rep_report。あなたの推測は ai_hypothesis。',
+                    'クライアント本人が明確に発言した内容だけ confirmed。担当者の解釈は rep_report。あなたの推測は ai_hypothesis。',
                 },
                 evidence: {
                   type: 'string',

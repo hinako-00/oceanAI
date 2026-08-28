@@ -17,7 +17,7 @@ import type { CustomerField, CustomerFieldKey, UpdateProposal } from './types';
  */
 export interface ApplySelection {
   customer?: {
-    /** 既存顧客に反映する場合のID。未指定なら新規作成。 */
+    /** 既存クライアントに反映する場合のID。未指定なら新規作成。 */
     customerId?: string;
     displayName?: string;
     /** customerUpdate.fields のうち適用する要素のindex。 */
@@ -51,7 +51,7 @@ export async function applyProposal(
     appliedKnowledge: 0,
   };
 
-  // --- 顧客情報 ---
+  // --- クライアント情報 ---
   const customerUpdate = proposal.customerUpdate;
   const customerSelection = selection.customer;
   if (customerUpdate && customerSelection) {
@@ -63,11 +63,9 @@ export async function applyProposal(
       .filter(Boolean);
 
     if (fields.length > 0 || openQuestions.length > 0) {
+      // 氏名はヒアリング項目ではなくクライアント自身の見出し（displayName）として持つ。
       const displayName =
-        customerSelection.displayName ||
-        customerUpdate.displayName ||
-        fields.find((f) => f.key === 'customerName')?.value ||
-        '名称未設定';
+        customerSelection.displayName || customerUpdate.displayName || '名称未設定';
 
       let customerId = customerSelection.customerId;
       let customer = customerId ? await getCustomer(customerId) : undefined;

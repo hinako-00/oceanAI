@@ -16,12 +16,12 @@ export async function GET(_request: Request, { params }: Params) {
     await requireUser();
     const { id } = await params;
     const customer = await getCustomer(id);
-    if (!customer) return NextResponse.json({ error: '顧客が見つかりません。' }, { status: 404 });
+    if (!customer) return NextResponse.json({ error: 'クライアントが見つかりません。' }, { status: 404 });
     const [meetings, actions] = await Promise.all([listMeetings(id), listNextActions()]);
     return NextResponse.json({
       customer,
       meetings,
-      // この顧客に紐づく次回行動は、担当者に関係なくチーム全員に見せる。
+      // このクライアントに紐づく次回行動は、担当者に関係なくチーム全員に見せる。
       nextActions: actions.filter((a) => a.customerId === id),
     });
   } catch (err) {
@@ -41,7 +41,7 @@ export async function PATCH(request: Request, { params }: Params) {
       ownerRepId?: string;
     };
     const updated = await updateCustomer(id, body);
-    if (!updated) return NextResponse.json({ error: '顧客が見つかりません。' }, { status: 404 });
+    if (!updated) return NextResponse.json({ error: 'クライアントが見つかりません。' }, { status: 404 });
     return NextResponse.json(updated);
   } catch (err) {
     return handleError(err);
@@ -54,7 +54,7 @@ export async function DELETE(_request: Request, { params }: Params) {
     const user = await requireUser();
     const { id } = await params;
     const customer = await getCustomer(id);
-    if (!customer) return NextResponse.json({ error: '顧客が見つかりません。' }, { status: 404 });
+    if (!customer) return NextResponse.json({ error: 'クライアントが見つかりません。' }, { status: 404 });
     if (customer.ownerRepId !== user.id && user.role !== 'admin') {
       return NextResponse.json(
         { error: '削除できるのは担当者本人と管理者だけです。担当を引き継ぐ場合は担当者を変更してください。' },

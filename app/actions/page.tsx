@@ -138,7 +138,7 @@ export default function ActionsPage() {
                     {overdue(action.due) && '（期限超過）'}
                   </span>
                   {action.customerId &&
-                    ` ／ 顧客: ${customers.find((c) => c.id === action.customerId)?.displayName ?? '（削除済み）'}`}
+                    ` ／ クライアント: ${customers.find((c) => c.id === action.customerId)?.displayName ?? '（削除済み）'}`}
                 </div>
               </span>
               {canEdit(action) && (
@@ -180,7 +180,7 @@ export default function ActionsPage() {
             <input type="date" value={form.due} onChange={(e) => setForm({ ...form, due: e.target.value })} />
           </label>
           <label className="field">
-            <span>顧客</span>
+            <span>クライアント</span>
             <select value={form.customerId} onChange={(e) => setForm({ ...form, customerId: e.target.value })}>
               <option value="">指定しない</option>
               {customers.map((customer) => (

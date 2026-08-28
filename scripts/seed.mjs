@@ -32,25 +32,35 @@ const customer = {
   id: customerId,
   displayName: '田中 一郎',
   fields: {
-    customerName: { value: '田中 一郎', source: 'confirmed', updatedAt: now },
-    companyName: { value: '会社員（IT系・共働き）', source: 'confirmed', updatedAt: now },
-    demographics: { value: '30代後半・配偶者と子ども2人・賃貸', source: 'confirmed', updatedAt: now },
-    leadSource: { value: 'InstagramのPR投稿から問い合わせ', source: 'rep_report', updatedAt: now },
-    currentSituation: {
-      value: '家計簿アプリを入れたが続かず、毎月の支出を把握できていない',
+    gender: { value: '男性', source: 'confirmed', updatedAt: now },
+    age: { value: '38', source: 'confirmed', updatedAt: now },
+    industry: { value: 'IT・通信', source: 'confirmed', updatedAt: now },
+    mbti: { value: 'ISFJ', source: 'rep_report', updatedAt: now },
+    personality: {
+      value: '慎重で、その場では決めない。数字を見せると納得しやすい',
       source: 'confirmed',
-      evidence: '家計簿は三日坊主で終わってしまって',
+      evidence: '一度持ち帰って考えさせてください',
       updatedAt: now,
     },
-    surfaceRequest: { value: '毎月の支出を自動で把握したい', source: 'confirmed', updatedAt: now },
-    coreIssue: {
-      value: '教育費の見通しが立たず、貯蓄できているのか不安な状態が続いている',
+    idealState: {
+      value: '教育費の見通しが立ち、貯蓄できている実感がある状態',
       source: 'ai_hypothesis',
       evidence: '「このままで足りるのか分からない」という発言からの推測',
       updatedAt: now,
     },
+    reasoning: {
+      value: '今のままだと年間いくら貯め損ねているかを一緒に計算して見せた',
+      source: 'rep_report',
+      updatedAt: now,
+    },
+    concerns: {
+      value: '月々の固定費が増えることへの不安。配偶者への相談も必要',
+      source: 'confirmed',
+      evidence: '一度、妻と相談してみます',
+      updatedAt: now,
+    },
   },
-  openQuestions: ['月々に出せる金額', '始めたい時期', '比較検討している他社', '配偶者への相談状況'],
+  openQuestions: ['月々に出せる金額', '始めたい時期', '配偶者への相談結果'],
   ownerRepId: 'rep-default',
   createdAt: now,
   updatedAt: now,
@@ -66,14 +76,14 @@ const meeting = {
   inputType: 'transcript',
   rawInput: [
     '担当：本日はお時間ありがとうございます。まず今の家計の管理について教えていただけますか。',
-    'お客様：家計簿アプリを入れたんですが、三日坊主で終わってしまって。今いくら使っているかも把握できていません。',
+    'クライアント：家計簿アプリを入れたんですが、三日坊主で終わってしまって。今いくら使っているかも把握できていません。',
     '担当：そうなんですね。弊社のサービスなら口座と連携して自動で集計されますし、スマホで完結します。',
-    'お客様：なるほど。ただ、毎月の固定費が増えるのは正直こわくて。',
+    'クライアント：なるほど。ただ、毎月の固定費が増えるのは正直こわくて。',
     '担当：月々のご負担は抑えられますので大丈夫ですよ。多くの方にご利用いただいています。',
-    'お客様：そうですか。一度、妻と相談してみます。',
+    'クライアント：そうですか。一度、妻と相談してみます。',
     '担当：ぜひご検討ください。来週あらためてご連絡します。',
   ].join('\n'),
-  outcome: '検討中',
+  outcome: '再アポ',
   createdAt: now,
 };
 
@@ -109,6 +119,6 @@ await write('meetings.json', [meeting]);
 await write('knowledge.json', knowledge);
 console.log('デモデータを投入しました:');
 console.log('  ※ 担当者は初期設定で作成する最初の管理者になります');
-console.log('  顧客情報 1件（未確認事項つき）');
+console.log('  クライアント情報 1件（未確認事項つき）');
 console.log('  アポ履歴 1件（文字起こし）');
 console.log(`  自社営業知識 ${knowledge.length}件`);

@@ -8,11 +8,11 @@ test('区切り文字・引用符・改行を含む値を壊さない', () => {
   assert.equal(escapeCell('A社, B社'), '"A社, B社"');
   assert.equal(escapeCell('彼は「"急ぎ"」と言った'), '"彼は「""急ぎ""」と言った"');
   // アポメモは改行を含む。囲まないとファイルが1行ずれて崩れる。
-  assert.equal(escapeCell('顧客：はい\n担当：ありがとうございます'), '"顧客：はい\n担当：ありがとうございます"');
+  assert.equal(escapeCell('クライアント：はい\n担当：ありがとうございます'), '"クライアント：はい\n担当：ありがとうございます"');
 });
 
 test('Excelが数式として実行しうる値を文字列に固定する', () => {
-  // 書き出す中身には顧客の発言やAIの生成文がそのまま入る。
+  // 書き出す中身にはクライアントの発言やAIの生成文がそのまま入る。
   assert.equal(escapeCell('=1+1'), "'=1+1");
   assert.equal(escapeCell('=HYPERLINK("http://example.com")'), '"\'=HYPERLINK(""http://example.com"")"');
   assert.equal(escapeCell('+81-90-0000-0000'), "'+81-90-0000-0000");
@@ -31,12 +31,12 @@ test('空の値を空文字にする', () => {
 
 test('BOM付き・CRLF区切りで組み立てる', () => {
   const csv = toCsv([
-    ['顧客', '担当者'],
+    ['クライアント', '担当者'],
     ['株式会社みなと', '山田 太郎'],
   ]);
   // BOMがないとExcelが日本語を文字化けさせる。
   assert.ok(csv.startsWith('﻿'), 'BOMがない');
-  assert.equal(csv, '﻿顧客,担当者\r\n株式会社みなと,山田 太郎\r\n');
+  assert.equal(csv, '﻿クライアント,担当者\r\n株式会社みなと,山田 太郎\r\n');
 });
 
 test('ファイル名にいつ時点のものかを入れる', () => {

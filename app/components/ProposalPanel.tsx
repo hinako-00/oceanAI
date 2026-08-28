@@ -23,7 +23,7 @@ const SOURCE_CLASS: Record<FactSource, string> = {
 interface Props {
   proposal: UpdateProposal;
   customers: Customer[];
-  /** 会話で選択中の顧客。既定の反映先にする。 */
+  /** 会話で選択中のクライアント。既定の反映先にする。 */
   currentCustomerId?: string;
   onResolved: (result: { status: 'applied' | 'rejected'; customerId?: string }) => void;
 }
@@ -104,12 +104,12 @@ export default function ProposalPanel({ proposal, customers, currentCustomerId, 
       {customerUpdate && (
         <section style={{ marginBottom: 12 }}>
           <div className="faint" style={{ marginBottom: 4 }}>
-            顧客情報
+            クライアント情報
           </div>
           <label className="field" style={{ marginBottom: 6 }}>
             <span>反映先</span>
             <select value={targetCustomerId} onChange={(e) => setTargetCustomerId(e.target.value)}>
-              <option value="">新規顧客として作成（{customerUpdate.displayName ?? '名称未設定'}）</option>
+              <option value="">新規クライアントとして作成（{customerUpdate.displayName ?? '名称未設定'}）</option>
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.displayName}

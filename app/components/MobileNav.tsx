@@ -141,7 +141,7 @@ export default function MobileNav({ user }: { user: PublicUser }) {
             </button>
 
             <p className="faint" style={{ margin: '12px 2px 0' }}>
-              顧客情報・アポ履歴・営業傾向はチームで共有されます。相談の履歴は本人だけが見られます。
+              クライアント情報・アポ履歴・営業傾向はチームで共有されます。相談の履歴は本人だけが見られます。
             </p>
           </div>
         </>

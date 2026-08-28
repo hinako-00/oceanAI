@@ -11,7 +11,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Ocean AI ｜ AI営業コーチ',
-  description: 'アポメモと顧客情報から、営業担当者の次の一手を具体化するAI営業コーチ',
+  description: 'アポメモとクライアント情報から、営業担当者の次の一手を具体化するAI営業コーチ',
   // ホーム画面に追加したときにブラウザのUIを出さず、アプリのように開く。
   appleWebApp: { capable: true, statusBarStyle: 'default', title: 'Ocean AI' },
   formatDetection: { telephone: false },

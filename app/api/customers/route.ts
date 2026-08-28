@@ -6,7 +6,7 @@ import { createCustomer, listCustomers } from '@/lib/repo';
 
 export const dynamic = 'force-dynamic';
 
-/** 顧客情報はチーム全員で共有する。 */
+/** クライアント情報はチーム全員で共有する。 */
 export async function GET() {
   try {
     await requireUser();

@@ -10,8 +10,8 @@ test('ツール入力を保存候補に変換する', () => {
       customerId: '',
       displayName: '田中 一郎',
       fields: [
-        { key: 'coreIssue', value: '家計の管理に毎月3日かかっている', source: 'confirmed', evidence: '毎月3日はかかります' },
-        { key: 'budget', value: '月5千円まで', source: 'rep_report', evidence: '' },
+        { key: 'personality', value: '慎重で、その場では決めない', source: 'confirmed', evidence: '一度持ち帰らせてください' },
+        { key: 'concerns', value: '月々の負担が増えること', source: 'rep_report', evidence: '' },
       ],
       openQuestions: ['ご家族への相談状況'],
     },
@@ -50,8 +50,8 @@ test('未知のキーや不正な値は落とす', () => {
       displayName: '',
       fields: [
         { key: 'unknownKey', value: 'x', source: 'confirmed', evidence: '' },
-        { key: 'budget', value: '未定', source: 'でっちあげ', evidence: '' },
-        { key: 'coreIssue', value: '   ', source: 'confirmed', evidence: '' },
+        { key: 'concerns', value: '未定', source: 'でっちあげ', evidence: '' },
+        { key: 'personality', value: '   ', source: 'confirmed', evidence: '' },
       ],
       openQuestions: [],
     },
@@ -63,7 +63,7 @@ test('未知のキーや不正な値は落とす', () => {
   assert.ok(update);
   const fields = update.customerUpdate?.fields ?? [];
   assert.equal(fields.length, 1);
-  assert.equal(fields[0].key, 'budget');
+  assert.equal(fields[0].key, 'concerns');
   // 情報源が不正なときは最も弱い扱い（AI仮説）に倒す。
   assert.equal(fields[0].source, 'ai_hypothesis');
   assert.equal(update.patternUpdates[0].axis, 'questioning');

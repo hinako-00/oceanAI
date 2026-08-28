@@ -134,7 +134,7 @@ export async function POST(request: Request) {
   // 参照情報（カルテ・文字起こし・自社知識）が一番大きいので、ここまでをキャッシュに載せる。
   const system = buildSystem([
     { text: SYSTEM_PROMPT, cache: true },
-    // ロールプレイ中は保存候補を出させない（お客様役に徹させるため）。
+    // ロールプレイ中は保存候補を出させない（クライアント役に徹させるため）。
     { text: inRoleplay ? '' : OUTPUT_CONTRACT },
     { text: contextBlock, cache: true },
     { text: modeHint(turnMode) },
@@ -184,7 +184,7 @@ export async function POST(request: Request) {
           thinking: { type: 'adaptive' },
           output_config: { effort: effortFor(turnMode) },
           system,
-          // ロールプレイ中はお客様役に徹させるため、保存候補のツールを渡さない。
+          // ロールプレイ中はクライアント役に徹させるため、保存候補のツールを渡さない。
           ...(inRoleplay ? {} : { tools: [SAVE_PROPOSAL_TOOL] }),
           messages,
         });

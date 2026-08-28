@@ -110,7 +110,7 @@ export default function ProfilePage() {
             <input value={form.product} onChange={(e) => setForm({ ...form, product: e.target.value })} />
           </label>
           <label className="field">
-            <span>担当領域・顧客層</span>
+            <span>担当領域・クライアント層</span>
             <input value={form.territory} onChange={(e) => setForm({ ...form, territory: e.target.value })} />
           </label>
         </div>

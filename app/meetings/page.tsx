@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { api, jsonBody, patchBody, today } from '@/lib/client';
 import { matches } from '@/lib/search';
+import { MEETING_OUTCOMES } from '@/lib/types';
 import type { Customer, Meeting, MeetingInputType, PublicUser } from '@/lib/types';
 
 const INPUT_TYPES: Array<{ value: MeetingInputType; label: string }> = [
@@ -13,7 +14,7 @@ const INPUT_TYPES: Array<{ value: MeetingInputType; label: string }> = [
   { value: 'chat', label: 'チャット・メールのやりとり' },
 ];
 
-const OUTCOMES = ['継続', '次回アポ確定', '検討中', '保留', '受注', '失注'];
+// 結果の語彙はクライアント情報の「結果」と共有する（lib/types.ts）。
 
 /** アポを記録し、そのままAIの振り返りに渡す画面。 */
 export default function MeetingsPage() {
@@ -32,7 +33,7 @@ export default function MeetingsPage() {
     date: today(),
     title: '',
     stage: '',
-    outcome: '継続',
+    outcome: MEETING_OUTCOMES[0],
     inputType: 'memo' as MeetingInputType,
     rawInput: '',
   });
@@ -62,7 +63,7 @@ export default function MeetingsPage() {
       date: meeting.date,
       title: meeting.title,
       stage: meeting.stage,
-      outcome: meeting.outcome || '継続',
+      outcome: meeting.outcome || MEETING_OUTCOMES[0],
       inputType: meeting.inputType,
       rawInput: meeting.rawInput,
     });
@@ -79,7 +80,7 @@ export default function MeetingsPage() {
 
   const save = async (thenAnalyze: boolean) => {
     if (!form.customerId) {
-      setError('顧客を選択してください。');
+      setError('クライアントを選択してください。');
       return;
     }
     if (!form.rawInput.trim()) {
@@ -162,12 +163,12 @@ export default function MeetingsPage() {
         <h2 className="card-title">{editingId ? 'アポを編集' : '新しいアポ'}</h2>
         {customers.length === 0 && (
           <div className="alert alert-warn" style={{ marginBottom: 10 }}>
-            先に「顧客情報」で顧客を登録してください。
+            先に「クライアント情報」でクライアントを登録してください。
           </div>
         )}
         <div className="grid-2" style={{ marginBottom: 10 }}>
           <label className="field">
-            <span>顧客</span>
+            <span>クライアント</span>
             <select
               value={form.customerId}
               onChange={(e) => setForm({ ...form, customerId: e.target.value })}
@@ -216,7 +217,7 @@ export default function MeetingsPage() {
           <label className="field">
             <span>アポの結果</span>
             <select value={form.outcome} onChange={(e) => setForm({ ...form, outcome: e.target.value })}>
-              {OUTCOMES.map((outcome) => (
+              {MEETING_OUTCOMES.map((outcome) => (
                 <option key={outcome} value={outcome}>
                   {outcome}
                 </option>
@@ -230,7 +231,7 @@ export default function MeetingsPage() {
           <textarea
             rows={10}
             value={form.rawInput}
-            placeholder={'例）\nお客様：毎月の家計管理が大変で、家計簿も三日坊主で続かなくて。\n担当：そうなんですね。いちばん負担に感じるのはどのあたりですか。'}
+            placeholder={'例）\nクライアント：毎月の家計管理が大変で、家計簿も三日坊主で続かなくて。\n担当：そうなんですね。いちばん負担に感じるのはどのあたりですか。'}
             onChange={(e) => setForm({ ...form, rawInput: e.target.value })}
           />
         </label>
@@ -267,13 +268,13 @@ export default function MeetingsPage() {
           <input
             type="search"
             value={filter.query}
-            placeholder="顧客名・アポの名称・メモの中身から探す"
+            placeholder="クライアント名・アポの名称・メモの中身から探す"
             onChange={(e) => setFilter({ ...filter, query: e.target.value })}
           />
         </label>
         <div className="grid-2" style={{ marginBottom: 12 }}>
           <label className="field">
-            <span>顧客</span>
+            <span>クライアント</span>
             <select
               value={filter.customerId}
               onChange={(e) => setFilter({ ...filter, customerId: e.target.value })}
@@ -293,7 +294,7 @@ export default function MeetingsPage() {
               onChange={(e) => setFilter({ ...filter, outcome: e.target.value })}
             >
               <option value="all">すべて</option>
-              {OUTCOMES.map((outcome) => (
+              {MEETING_OUTCOMES.map((outcome) => (
                 <option key={outcome} value={outcome}>
                   {outcome}
                 </option>
@@ -312,7 +313,7 @@ export default function MeetingsPage() {
           <table className="cards">
             <thead>
               <tr>
-                <th>顧客</th>
+                <th>クライアント</th>
                 <th>日付</th>
                 <th>アポ</th>
                 <th>担当者</th>

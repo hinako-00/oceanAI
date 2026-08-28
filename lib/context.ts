@@ -78,8 +78,8 @@ export function formatTendencies(rep: User | undefined): string {
 }
 
 export function formatCustomer(customer: Customer | undefined): string {
-  if (!customer) return '顧客未選択（顧客情報の参照情報なし）';
-  const lines: string[] = [`顧客ID: ${customer.id}`, `表示名: ${customer.displayName}`];
+  if (!customer) return 'クライアント未選択（クライアント情報の参照情報なし）';
+  const lines: string[] = [`クライアントID: ${customer.id}`, `表示名: ${customer.displayName}`];
   for (const key of CUSTOMER_FIELD_KEYS) {
     const field = customer.fields[key];
     if (!field || !field.value) {
@@ -164,7 +164,7 @@ export function buildContextBlock(input: ContextInput): string {
     '【未完了の次回行動】',
     formatNextActions(input.nextActions),
     '',
-    '【顧客情報】',
+    '【クライアント情報】',
     formatCustomer(input.customer),
     '',
     '【過去のアポ履歴】',

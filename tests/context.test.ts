@@ -8,8 +8,8 @@ const customer: Customer = {
   id: 'c1',
   displayName: '田中 一郎',
   fields: {
-    coreIssue: { value: '家計の管理に毎月3日かかっている', source: 'confirmed', evidence: '毎月3日はかかります', updatedAt: '2026-08-01T00:00:00Z' },
-    budget: { value: '月5千円程度か', source: 'ai_hypothesis', updatedAt: '2026-08-01T00:00:00Z' },
+    personality: { value: '慎重で、その場では決めない', source: 'confirmed', evidence: '一度持ち帰らせてください', updatedAt: '2026-08-01T00:00:00Z' },
+    concerns: { value: '月々の負担が増えることへの不安か', source: 'ai_hypothesis', updatedAt: '2026-08-01T00:00:00Z' },
   },
   openQuestions: ['ご家族への相談状況'],
   ownerRepId: 'rep-default',
@@ -17,12 +17,12 @@ const customer: Customer = {
   updatedAt: '2026-08-01T00:00:00Z',
 };
 
-test('顧客情報は情報源つきで整形され、未登録項目は未確認になる', () => {
+test('クライアント情報は情報源つきで整形され、未登録項目は未確認になる', () => {
   const text = formatCustomer(customer);
-  assert.match(text, /本質的な課題: 家計の管理に毎月3日かかっている（確認済みの事実/);
-  assert.match(text, /ご予算・出せる金額: 月5千円程度か（AIによる仮説）/);
+  assert.match(text, /性格: 慎重で、その場では決めない（確認済みの事実/);
+  assert.match(text, /懸念: 月々の負担が増えることへの不安か（AIによる仮説）/);
   // 値のない項目を推測で埋めない。
-  assert.match(text, /比較検討している他社: 未確認/);
+  assert.match(text, /布石: 未確認/);
   assert.match(text, /未確認事項: ご家族への相談状況/);
 });
 
@@ -47,7 +47,7 @@ test('参照情報ブロックに仕様のすべての見出しが含まれる',
     updatedAt: '2026-08-01T00:00:00Z',
   };
   const block = buildContextBlock({ rep, customer, meetings: [], knowledge: [], nextActions: [] });
-  for (const heading of ['【利用者情報】', '【過去の営業傾向】', '【顧客情報】', '【過去のアポ履歴】', '【自社営業知識】']) {
+  for (const heading of ['【利用者情報】', '【過去の営業傾向】', '【クライアント情報】', '【過去のアポ履歴】', '【自社営業知識】']) {
     assert.ok(block.includes(heading), `${heading} が含まれていない`);
   }
 });

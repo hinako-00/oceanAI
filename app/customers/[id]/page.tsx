@@ -5,8 +5,10 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { api, formatDate, patchBody } from '@/lib/client';
 import {
+  CUSTOMER_FIELD_HINT,
   CUSTOMER_FIELD_KEYS,
   CUSTOMER_FIELD_LABEL,
+  CUSTOMER_FIELD_OPTIONS,
   FACT_SOURCE_LABEL,
 } from '@/lib/types';
 import type { Customer, CustomerFieldKey, FactSource, Meeting, Mode, NextAction, PublicUser } from '@/lib/types';
@@ -20,7 +22,7 @@ const SOURCE_CLASS: Record<FactSource, string> = {
 
 const EDITABLE_SOURCES: FactSource[] = ['confirmed', 'rep_report', 'ai_hypothesis'];
 
-/** 顧客情報の詳細。項目ごとに値と情報源を編集できる。 */
+/** クライアント情報の詳細。項目ごとに値と情報源を編集できる。 */
 export default function CustomerDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -98,7 +100,7 @@ export default function CustomerDetailPage() {
 
   const remove = async () => {
     if (!customer) return;
-    if (!confirm('この顧客とアポ履歴を削除しますか？チーム全員から見えなくなります。')) return;
+    if (!confirm('このクライアントとアポ履歴を削除しますか？チーム全員から見えなくなります。')) return;
     try {
       await api(`/api/customers/${customer.id}`, { method: 'DELETE' });
       router.push('/customers');
@@ -134,17 +136,37 @@ export default function CustomerDetailPage() {
   const renderFieldRow = (key: CustomerFieldKey) => {
     const field = card.fields[key];
     const isEditing = editing === key;
+    const options = CUSTOMER_FIELD_OPTIONS[key];
+    const hint = CUSTOMER_FIELD_HINT[key];
     return (
       <tr key={key}>
         <th style={{ width: 168 }}>{CUSTOMER_FIELD_LABEL[key]}</th>
         <td>
           {isEditing ? (
             <div className="stack">
-              <textarea
-                rows={2}
-                value={draft.value}
-                onChange={(e) => setDraft({ ...draft, value: e.target.value })}
-              />
+              {/* 決まった言葉で持つ項目はプルダウンにする。
+                  自由入力だと表記が揺れて、あとから絞り込めなくなる。 */}
+              {options ? (
+                <select
+                  value={draft.value}
+                  onChange={(e) => setDraft({ ...draft, value: e.target.value })}
+                >
+                  <option value="">未選択</option>
+                  {options.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <textarea
+                  rows={2}
+                  value={draft.value}
+                  placeholder={CUSTOMER_FIELD_HINT[key] ?? ''}
+                  onChange={(e) => setDraft({ ...draft, value: e.target.value })}
+                />
+              )}
+              {hint && !options && <span className="faint">{hint}</span>}
               <div className="row">
                 <select
                   value={draft.source}
@@ -158,7 +180,7 @@ export default function CustomerDetailPage() {
                 </select>
                 <input
                   value={draft.evidence}
-                  placeholder="根拠（顧客の発言など）"
+                  placeholder="根拠（クライアントの発言など）"
                   onChange={(e) => setDraft({ ...draft, evidence: e.target.value })}
                 />
               </div>
@@ -212,7 +234,7 @@ export default function CustomerDetailPage() {
             className="btn-primary"
             onClick={() =>
               askCoach(
-                'この顧客との次回アポの準備をしたいです。目的、優先質問、想定反論、着地点を整理してください。',
+                'このクライアントとの次回アポの準備をしたいです。目的、優先質問、想定反論、着地点を整理してください。',
                 'A',
               )
             }
@@ -318,7 +340,7 @@ export default function CustomerDetailPage() {
       </div>
 
       <div className="card">
-        <h2 className="card-title">この顧客の次回行動（{actions.filter((a) => !a.done).length}件）</h2>
+        <h2 className="card-title">このクライアントの次回行動（{actions.filter((a) => !a.done).length}件）</h2>
         {actions.filter((a) => !a.done).length === 0 ? (
           <p className="faint">未完了の行動はありません。</p>
         ) : (

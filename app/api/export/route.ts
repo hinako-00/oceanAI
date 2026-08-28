@@ -35,7 +35,7 @@ export async function GET(request: Request) {
     if (kind === 'customers') {
       const customers = await listCustomers();
       rows.push([
-        '顧客',
+        'クライアント',
         '担当者',
         ...CUSTOMER_FIELD_KEYS.flatMap((key) => [CUSTOMER_FIELD_LABEL[key], `${CUSTOMER_FIELD_LABEL[key]}の情報源`]),
         '未確認事項',
@@ -61,7 +61,7 @@ export async function GET(request: Request) {
       const [meetings, customers] = await Promise.all([listMeetings(), listCustomers()]);
       const customerName = (id: string) =>
         customers.find((c) => c.id === id)?.displayName ?? '（削除済み）';
-      rows.push(['アポの日付', '顧客', '担当者', 'アポの名称', '段階', '結果', '入力の種類', 'アポメモ・文字起こし']);
+      rows.push(['アポの日付', 'クライアント', '担当者', 'アポの名称', '段階', '結果', '入力の種類', 'アポメモ・文字起こし']);
       for (const meeting of meetings) {
         rows.push([
           meeting.date,
@@ -79,7 +79,7 @@ export async function GET(request: Request) {
     if (kind === 'actions') {
       // 次回行動は画面と同じく本人のぶんだけ書き出す。
       const [actions, customers] = await Promise.all([listNextActions(user.id), listCustomers()]);
-      rows.push(['期限', '状態', '顧客', '担当者', '行動', '目的']);
+      rows.push(['期限', '状態', 'クライアント', '担当者', '行動', '目的']);
       for (const action of actions) {
         rows.push([
           action.due,

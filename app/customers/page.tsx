@@ -8,7 +8,7 @@ import { matches } from '@/lib/search';
 import { CUSTOMER_FIELD_LABEL, FACT_SOURCE_LABEL } from '@/lib/types';
 import type { Customer, PublicUser } from '@/lib/types';
 
-/** 顧客情報の一覧。チーム全員の顧客を表示し、担当者で絞り込める。 */
+/** クライアント情報の一覧。チーム全員のクライアントを表示し、担当者で絞り込める。 */
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [users, setUsers] = useState<PublicUser[]>([]);
@@ -59,10 +59,11 @@ export default function CustomersPage() {
     return byOwner.filter((c) =>
       matches(query, [
         c.displayName,
-        c.fields.coreIssue?.value,
-        c.fields.currentSituation?.value,
-        c.fields.surfaceRequest?.value,
-        c.fields.temperature?.value,
+        c.fields.industry?.value,
+        c.fields.personality?.value,
+        c.fields.idealState?.value,
+        c.fields.concerns?.value,
+        c.fields.summary?.value,
         ...c.openQuestions,
       ]),
     );
@@ -71,7 +72,7 @@ export default function CustomersPage() {
   return (
     <div className="page">
       <div className="page-head">
-        <h1 className="page-title">顧客情報</h1>
+        <h1 className="page-title">クライアント情報</h1>
         <p className="page-desc">
           チーム全員で共有します。確認済みの事実・担当者の報告・AIの仮説を区別して記録し、
           情報がない項目は「未確認」のままにします。
@@ -79,11 +80,11 @@ export default function CustomersPage() {
       </div>
 
       <div className="card">
-        <h2 className="card-title">顧客を追加</h2>
+        <h2 className="card-title">クライアントを追加</h2>
         <div className="row">
           <input
             value={name}
-            placeholder="お客様のお名前"
+            placeholder="クライアントのお名前"
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && create()}
             style={{ flex: '1 1 200px', minWidth: 0 }}
@@ -113,7 +114,7 @@ export default function CustomersPage() {
           <input
             type="search"
             value={query}
-            placeholder="お名前・課題・未確認事項から探す"
+            placeholder="お名前・業種・性格・懸念から探す"
             onChange={(e) => setQuery(e.target.value)}
           />
         </label>
@@ -121,7 +122,7 @@ export default function CustomersPage() {
           <span>担当者でしぼり込む</span>
           <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)}>
             <option value="all">すべて</option>
-            <option value="mine">自分の顧客</option>
+            <option value="mine">自分のクライアント</option>
             {users.map((user) => (
               <option key={user.id} value={user.id}>
                 {user.name}
@@ -132,25 +133,25 @@ export default function CustomersPage() {
         {visible.length === 0 ? (
           <div className="empty">
             {query.trim() || ownerFilter !== 'all'
-              ? '条件に合う顧客がありません。検索語や担当者の絞り込みを見直してください。'
-              : 'まだ顧客が登録されていません。'}
+              ? '条件に合うクライアントがありません。検索語や担当者の絞り込みを見直してください。'
+              : 'まだクライアントが登録されていません。'}
           </div>
         ) : (
           <table className="cards">
             <thead>
               <tr>
-                <th>顧客</th>
+                <th>クライアント</th>
                 <th>担当者</th>
-                <th>{CUSTOMER_FIELD_LABEL.coreIssue}</th>
-                <th>{CUSTOMER_FIELD_LABEL.temperature}</th>
+                <th>{CUSTOMER_FIELD_LABEL.industry}</th>
+                <th>{CUSTOMER_FIELD_LABEL.result}</th>
                 <th>未確認</th>
                 <th>更新</th>
               </tr>
             </thead>
             <tbody>
               {visible.map((customer) => {
-                const issue = customer.fields.coreIssue;
-                const temperature = customer.fields.temperature;
+                const industry = customer.fields.industry;
+                const result = customer.fields.result;
                 return (
                   <tr key={customer.id}>
                     <td data-head="">
@@ -162,18 +163,18 @@ export default function CustomersPage() {
                       {ownerName(customer.ownerRepId)}
                       {customer.ownerRepId === me?.id && <span className="badge badge-rep"> 自分</span>}
                     </td>
-                    <td data-label={CUSTOMER_FIELD_LABEL.coreIssue}>
-                      {issue ? (
+                    <td data-label={CUSTOMER_FIELD_LABEL.industry}>
+                      {industry ? (
                         <span>
-                          {issue.value}
-                          <div className="faint">{FACT_SOURCE_LABEL[issue.source]}</div>
+                          {industry.value}
+                          <div className="faint">{FACT_SOURCE_LABEL[industry.source]}</div>
                         </span>
                       ) : (
                         <span className="badge badge-unconfirmed">未確認</span>
                       )}
                     </td>
-                    <td data-label={CUSTOMER_FIELD_LABEL.temperature}>
-                      {temperature?.value ?? <span className="badge badge-unconfirmed">未確認</span>}
+                    <td data-label={CUSTOMER_FIELD_LABEL.result}>
+                      {result?.value ?? <span className="badge badge-unconfirmed">未確認</span>}
                     </td>
                     <td data-label="未確認">{customer.openQuestions.length}件</td>
                     <td className="faint" data-label="更新">{formatDate(customer.updatedAt)}</td>
