@@ -22,12 +22,34 @@ interface Bootstrap {
   hasApiKey: boolean;
 }
 
-/** 入力の手間を減らすための定型文。 */
+/**
+ * 入力の手間を減らすための定型文。
+ *
+ * それだけで質問として成立するものは、押したらそのまま送る（needsInput: false）。
+ * 商談メモの貼り付けが前提のものは入力欄に流し込んで続きを書いてもらう。
+ * 全部を「入力欄に入れるだけ」にすると、押しても何も起きないように見える。
+ */
 const QUICK_PROMPTS = [
-  { label: '商談前の準備', text: '明日の商談前の準備をしたいです。今回の目的、優先して聞くべき質問、想定される反論と返し方、着地点を整理してください。' },
-  { label: '商談の振り返り', text: '今日の商談の振り返りをお願いします。商談メモは以下です。\n\n' },
-  { label: '案件が止まった', text: '案件が止まっています。状況は以下です。原因の可能性と、次に確認すべきことを整理してください。\n\n' },
-  { label: '営業傾向を確認', text: 'これまでの記録から、私の営業傾向、強み、繰り返している癖、次に試すべき行動を教えてください。' },
+  {
+    label: '商談前の準備',
+    needsInput: false,
+    text: '明日の商談前の準備をしたいです。今回の目的、優先して聞くべき質問、想定される反論と返し方、着地点を整理してください。',
+  },
+  {
+    label: '商談の振り返り',
+    needsInput: true,
+    text: '今日の商談の振り返りをお願いします。商談メモは以下です。\n\n',
+  },
+  {
+    label: '案件が止まった',
+    needsInput: true,
+    text: '案件が止まっています。状況は以下です。原因の可能性と、次に確認すべきことを整理してください。\n\n',
+  },
+  {
+    label: '営業傾向を確認',
+    needsInput: false,
+    text: 'これまでの記録から、私の営業傾向、強み、繰り返している癖、次に試すべき行動を教えてください。',
+  },
 ];
 
 const DIFFICULTIES = ['易しい', '標準', '難しい'] as const;
@@ -210,6 +232,7 @@ export default function ChatPage() {
         for (const line of lines) {
           if (!line.trim()) continue;
           const event = JSON.parse(line) as
+            | { type: 'start' | 'ping' }
             | { type: 'delta'; text: string }
             | { type: 'done'; sessionId: string; proposalId?: string; truncated?: boolean }
             | { type: 'error'; message: string };
@@ -218,17 +241,44 @@ export default function ChatPage() {
             setStreaming(answer);
           } else if (event.type === 'error') {
             throw new Error(event.message);
-          } else {
+          } else if (event.type === 'done') {
             finished = {
               sessionId: event.sessionId,
               proposalId: event.proposalId,
               truncated: event.truncated,
             };
           }
+          // start / ping は接続を保つためだけのもの。知らない種類は無視する。
         }
       }
 
       setStreaming('');
+
+      // done が来ないままストリームが終わった＝最後まで届いていない。
+      // サーバーは done を出す前に保存するので、この回答はサーバーにも残っていない。
+      // 黙って画面にだけ残すと、再読込で消える回答や空の吹き出しができてしまう。
+      if (!finished) {
+        if (answer.trim()) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `ai-${Date.now()}`,
+              role: 'assistant',
+              content: answer,
+              createdAt: new Date().toISOString(),
+            },
+          ]);
+          setError(
+            '回答が最後まで届きませんでした（途中で接続が切れています）。この回答は保存されていません。もう一度お試しください。',
+          );
+        } else {
+          setError(
+            '回答が届きませんでした。時間がかかりすぎて接続が切れた可能性があります。対象を絞って聞き直すか、しばらく待ってからお試しください。',
+          );
+        }
+        return;
+      }
+
       setMessages((prev) => [
         ...prev,
         {
@@ -239,19 +289,18 @@ export default function ChatPage() {
         },
       ]);
 
-      if (finished) {
-        setSessionId(finished.sessionId);
-        // 出力の上限に当たった回答は途中で切れており、保存候補も出ていない。
-        // 完成した回答のように見せない。
-        if (finished.truncated) {
-          setError(
-            '回答が長くなりすぎて途中で切れました。対象を絞って聞き直すか、商談メモを分割してお試しください。',
-          );
-        }
-        const bootstrap = await reload();
-        if (finished.proposalId) {
-          setProposal(bootstrap.pendingProposals.find((p) => p.id === finished!.proposalId) ?? null);
-        }
+      setSessionId(finished.sessionId);
+      // 出力の上限に当たった回答は途中で切れており、保存候補も出ていない。
+      // 完成した回答のように見せない。
+      if (finished.truncated) {
+        setError(
+          '回答が長くなりすぎて途中で切れました。対象を絞って聞き直すか、商談メモを分割してお試しください。',
+        );
+      }
+      const bootstrap = await reload();
+      const proposalId = finished.proposalId;
+      if (proposalId) {
+        setProposal(bootstrap.pendingProposals.find((p) => p.id === proposalId) ?? null);
       }
     } catch (err) {
       setStreaming('');
@@ -286,9 +335,15 @@ export default function ChatPage() {
     [data, customerId],
   );
 
-  const useQuickPrompt = (text: string) => {
-    setInput(text);
-    textareaRef.current?.focus();
+  const useQuickPrompt = (prompt: (typeof QUICK_PROMPTS)[number]) => {
+    if (prompt.needsInput) {
+      // 商談メモを貼ってもらう必要があるので、入力欄に入れて続きを書いてもらう。
+      setInput(prompt.text);
+      textareaRef.current?.focus();
+      return;
+    }
+    // それだけで質問として成立するものは、押したらそのまま送る。
+    void send(prompt.text);
   };
 
   return (
@@ -420,7 +475,8 @@ export default function ChatPage() {
                       key={prompt.label}
                       type="button"
                       className="btn-sm"
-                      onClick={() => useQuickPrompt(prompt.text)}
+                      disabled={busy}
+                      onClick={() => useQuickPrompt(prompt)}
                     >
                       {prompt.label}
                     </button>

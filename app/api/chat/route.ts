@@ -154,6 +154,26 @@ export async function POST(request: Request) {
     async start(controller) {
       let answer = '';
       let emitted = 0;
+
+      // 閉じたあとの enqueue は例外になるので、送信は必ずここを通す。
+      let closed = false;
+      const send = (event: unknown) => {
+        if (closed) return;
+        try {
+          controller.enqueue(encodeEvent(event));
+        } catch {
+          // 利用者が画面を離れて接続が切れた場合。以降は送らない。
+          closed = true;
+        }
+      };
+
+      // 最初の1バイトをすぐ流す。
+      // 推論に時間がかかると最初のトークンまで数十秒かかることがあり、その間ずっと
+      // 無音だと、間に入るプロキシや実行基盤が「応答がない」と判断して接続を切る。
+      // 切られると done が届かず、画面には空の吹き出しだけが残る。
+      send({ type: 'start' });
+      const keepAlive = setInterval(() => send({ type: 'ping' }), 5000);
+
       try {
         const response = client.messages.stream({
           model: getModel(),
@@ -171,7 +191,7 @@ export async function POST(request: Request) {
         response.on('text', (delta) => {
           answer += delta;
           if (answer.length > emitted) {
-            controller.enqueue(encodeEvent({ type: 'delta', text: answer.slice(emitted) }));
+            send({ type: 'delta', text: answer.slice(emitted) });
             emitted = answer.length;
           }
         });
@@ -182,13 +202,11 @@ export async function POST(request: Request) {
         // refusal は HTTP 200 で返るため、見ていないと空の回答がそのまま履歴に残り、
         // 以降のターンの文脈を汚し続ける。
         if (final.stop_reason === 'refusal') {
-          controller.enqueue(
-            encodeEvent({
-              type: 'error',
-              message:
-                'この内容には回答できませんでした。表現を変えるか、扱う情報を絞って試してください。（この発言は履歴に残していません）',
-            }),
-          );
+          send({
+            type: 'error',
+            message:
+              'この内容には回答できませんでした。表現を変えるか、扱う情報を絞って試してください。（この発言は履歴に残していません）',
+          });
           return;
         }
 
@@ -206,9 +224,7 @@ export async function POST(request: Request) {
 
         const body = answer.trim();
         if (!body && !update) {
-          controller.enqueue(
-            encodeEvent({ type: 'error', message: '回答が空でした。もう一度お試しください。' }),
-          );
+          send({ type: 'error', message: '回答が空でした。もう一度お試しください。' });
           return;
         }
 
@@ -226,21 +242,25 @@ export async function POST(request: Request) {
           proposalId = proposal.id;
         }
 
-        controller.enqueue(
-          encodeEvent({
-            type: 'done',
-            sessionId,
-            messageId: assistantMessage.id,
-            proposalId,
-            hasUpdate: Boolean(update),
-            truncated,
-          }),
-        );
+        send({
+          type: 'done',
+          sessionId,
+          messageId: assistantMessage.id,
+          proposalId,
+          hasUpdate: Boolean(update),
+          truncated,
+        });
       } catch (err) {
         const message = err instanceof Error ? err.message : '応答の生成に失敗しました。';
-        controller.enqueue(encodeEvent({ type: 'error', message }));
+        send({ type: 'error', message });
       } finally {
-        controller.close();
+        clearInterval(keepAlive);
+        closed = true;
+        try {
+          controller.close();
+        } catch {
+          // 接続が先に切れている場合は何もしない。
+        }
       }
     },
   });
