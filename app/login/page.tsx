@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
+import { isSafeNextPath } from '@/lib/auth-constants';
 import { api, jsonBody } from '@/lib/client';
 
 function LoginForm() {
@@ -12,6 +13,10 @@ function LoginForm() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+
+  // セッション切れで送り返されてきた場合は理由を伝える。
+  // 何も出さないと「勝手にログイン画面に戻された」ように見える。
+  const expired = params.get('expired') === '1';
 
   // 利用者が1人もいなければ初期設定へ送る。
   useEffect(() => {
@@ -28,8 +33,10 @@ function LoginForm() {
     setError('');
     try {
       await api('/api/auth/login', jsonBody({ email, password }));
+      // 戻り先は自サイト内のパスに限る。`//example.com` は「/」で始まるが
+      // ブラウザは外部サイトとして扱うため、isSafeNextPath で弾く。
       const next = params.get('next');
-      router.push(next && next.startsWith('/') ? next : '/');
+      router.push(isSafeNextPath(next) ? next : '/');
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'ログインに失敗しました。');
@@ -49,6 +56,11 @@ function LoginForm() {
       </div>
 
       <div className="stack">
+        {expired && (
+          <div className="alert alert-warn">
+            セッションの有効期限が切れました。もう一度ログインしてください。
+          </div>
+        )}
         <label className="field">
           <span>メールアドレス</span>
           <input

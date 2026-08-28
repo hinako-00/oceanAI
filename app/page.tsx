@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Formatted from './components/Formatted';
 import ProposalPanel from './components/ProposalPanel';
 import { IconClose, IconHistory, IconPlus, IconSend, IconSettings } from './components/nav';
-import { api } from '@/lib/client';
+import { api, redirectToLogin, SessionExpiredError } from '@/lib/client';
 import { MODE_LABEL } from '@/lib/types';
 import type { Customer, Message, Mode, PublicUser, Session, UpdateProposal } from '@/lib/types';
 
@@ -183,6 +183,12 @@ export default function ChatPage() {
           roleplay: roleplayOp,
         }),
       });
+
+      if (response.status === 401) {
+        // この経路は api() を通らない生の fetch なので、401を自前で拾う。
+        redirectToLogin();
+        throw new SessionExpiredError();
+      }
 
       if (!response.ok || !response.body) {
         const detail = (await response.json().catch(() => null)) as { error?: string } | null;
