@@ -4,9 +4,9 @@ import { buildSystem, getClient, getMaxTokens, getModel, MissingApiKeyError } fr
 import { handleError } from '@/lib/api';
 import { requireUser } from '@/lib/auth';
 import { buildContextBlock } from '@/lib/context';
-import { extractUpdate, stripPartialBlock } from '@/lib/extract';
-import { detectMode, makeTitle } from '@/lib/mode';
+import { detectMode, effortFor, makeTitle } from '@/lib/mode';
 import { modeHint, OUTPUT_CONTRACT, ROLEPLAY_FEEDBACK_PROMPT, roleplayOverride, SYSTEM_PROMPT } from '@/lib/prompt';
+import { parseProposal, SAVE_PROPOSAL_TOOL } from '@/lib/proposal';
 import {
   appendMessages,
   createSession,
@@ -93,12 +93,29 @@ export async function POST(request: Request) {
   if (body.customerId && body.customerId !== session.customerId) {
     session = (await updateSession(session.id, { customerId: body.customerId })) ?? session;
   }
-  if (body.mode && body.mode !== session.mode && body.roleplay?.action !== 'start') {
-    session = (await updateSession(session.id, { mode: body.mode })) ?? session;
-  }
 
   const inRoleplay = Boolean(roleplay?.active);
   const endingRoleplay = body.roleplay?.action === 'end';
+
+  // --- 今回のモード ---
+  // モードはシステムプロンプトの指示と推論の深さを決めるので、セッション作成時の
+  // 一度きりの推定を使い回さない。担当者が画面で明示的に選んでいればそれを尊重し、
+  // 「自動判定」のままなら毎ターン入力から推定し直す。
+  // こうしないと、準備の相談で始めた会話に途中で文字起こしを貼っても
+  // 「商談前の準備をしています」という古い指示が残り続ける。
+  let turnMode: Mode | null;
+  if (inRoleplay || body.roleplay?.action === 'start') {
+    turnMode = 'F';
+  } else if (body.mode) {
+    turnMode = body.mode;
+  } else if (endingRoleplay) {
+    turnMode = 'F';
+  } else {
+    turnMode = detectMode(userText);
+  }
+  if (turnMode !== session.mode) {
+    session = (await updateSession(session.id, { mode: turnMode })) ?? session;
+  }
 
   // --- 参照情報の組み立て ---
   const customerId = session.customerId;
@@ -111,12 +128,15 @@ export async function POST(request: Request) {
 
   const contextBlock = buildContextBlock({ rep, customer, meetings, knowledge, nextActions });
 
+  // ブロックは「毎回同じもの → 会話ごとに変わるもの → ターンごとに変わるもの」の順に並べる。
+  // キャッシュは前方一致なので、揮発するものを先に置くと後ろが全部無効になる。
+  // 参照情報（カルテ・文字起こし・自社知識）が一番大きいので、ここまでをキャッシュに載せる。
   const system = buildSystem([
     { text: SYSTEM_PROMPT, cache: true },
     // ロールプレイ中は保存候補を出させない（顧客役に徹させるため）。
-    { text: inRoleplay ? '' : OUTPUT_CONTRACT, cache: true },
-    { text: modeHint(session.mode) },
-    { text: contextBlock },
+    { text: inRoleplay ? '' : OUTPUT_CONTRACT },
+    { text: contextBlock, cache: true },
+    { text: modeHint(turnMode) },
     { text: inRoleplay && roleplay ? roleplayOverride(roleplay) : '' },
     { text: endingRoleplay ? ROLEPLAY_FEEDBACK_PROMPT : '' },
   ]);
@@ -132,30 +152,72 @@ export async function POST(request: Request) {
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      let full = '';
+      let answer = '';
       let emitted = 0;
       try {
         const response = client.messages.stream({
           model: getModel(),
           max_tokens: getMaxTokens(),
+          // モデルに考える深さを自分で決めさせる。ANTHROPIC_MODEL を Opus 4.8 などに
+          // 変えたときも思考が切れないよう、既定に頼らず明示する。
+          thinking: { type: 'adaptive' },
+          output_config: { effort: effortFor(turnMode) },
           system,
+          // ロールプレイ中は顧客役に徹させるため、保存候補のツールを渡さない。
+          ...(inRoleplay ? {} : { tools: [SAVE_PROPOSAL_TOOL] }),
           messages,
         });
 
         response.on('text', (delta) => {
-          full += delta;
-          // 保存候補ブロックは画面に出さない。未完成の途中経過も隠す。
-          const visible = stripPartialBlock(full);
-          if (visible.length > emitted) {
-            controller.enqueue(encodeEvent({ type: 'delta', text: visible.slice(emitted) }));
-            emitted = visible.length;
+          answer += delta;
+          if (answer.length > emitted) {
+            controller.enqueue(encodeEvent({ type: 'delta', text: answer.slice(emitted) }));
+            emitted = answer.length;
           }
         });
 
-        await response.finalMessage();
+        const final = await response.finalMessage();
 
-        const { body: answer, update } = extractUpdate(full);
-        const assistantMessage = makeMessage('assistant', answer);
+        // 安全側の停止理由を素通りさせない。
+        // refusal は HTTP 200 で返るため、見ていないと空の回答がそのまま履歴に残り、
+        // 以降のターンの文脈を汚し続ける。
+        if (final.stop_reason === 'refusal') {
+          controller.enqueue(
+            encodeEvent({
+              type: 'error',
+              message:
+                'この内容には回答できませんでした。表現を変えるか、扱う情報を絞って試してください。（この発言は履歴に残していません）',
+            }),
+          );
+          return;
+        }
+
+        // 出力上限に当たった場合、本文は途中で切れており保存候補も出ていない。
+        // 黙って完成品のように見せない。
+        const truncated = final.stop_reason === 'max_tokens';
+
+        // 保存候補はツール呼び出しで受け取る。本文の長さに左右されず、
+        // スキーマ違反も起きない。
+        const toolUse = final.content.find(
+          (block): block is Extract<typeof block, { type: 'tool_use' }> =>
+            block.type === 'tool_use' && block.name === SAVE_PROPOSAL_TOOL.name,
+        );
+        const update = toolUse ? parseProposal(toolUse.input) : undefined;
+
+        const body = answer.trim();
+        if (!body && !update) {
+          controller.enqueue(
+            encodeEvent({ type: 'error', message: '回答が空でした。もう一度お試しください。' }),
+          );
+          return;
+        }
+
+        // 本文を書かずにツールだけ呼んだ場合でも、空の発言を履歴に残さない。
+        // 空のまま保存すると、以降のターンでモデルが「自分は何も答えなかった」と読む。
+        const assistantMessage = makeMessage(
+          'assistant',
+          body || '保存候補をまとめました。内容を確認してください。',
+        );
         await appendMessages(sessionId, [userMessage, assistantMessage]);
 
         let proposalId: string | undefined;
@@ -171,6 +233,7 @@ export async function POST(request: Request) {
             messageId: assistantMessage.id,
             proposalId,
             hasUpdate: Boolean(update),
+            truncated,
           }),
         );
       } catch (err) {

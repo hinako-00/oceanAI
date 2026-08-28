@@ -167,6 +167,8 @@ export const TENDENCY_CATEGORY_LABEL: Record<TendencyCategory, string> = {
   change: '前回の改善課題からの変化',
 };
 
+export const TENDENCY_CATEGORY_KEYS = Object.keys(TENDENCY_CATEGORY_LABEL) as TendencyCategory[];
+
 /** 分析の信頼度。データ数が少ない場合は必ず low とし「暫定的な傾向」として扱う。 */
 export type Confidence = 'low' | 'mid' | 'high';
 

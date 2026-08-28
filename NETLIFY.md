@@ -12,6 +12,16 @@
 - 環境変数を設定済みです: `ANTHROPIC_MODEL`、`ANTHROPIC_MAX_TOKENS`、`ANTHROPIC_API_KEY`、
   **`STORAGE_DRIVER=blobs`**。
 
+### `ANTHROPIC_MAX_TOKENS` は消すか 64000 以上にする
+
+このサイトには `ANTHROPIC_MAX_TOKENS` が設定されています。値が小さい（かつての既定値 `8000` など）と、
+コードの既定値を上げても**環境変数のほうが勝つ**ため、商談分析が途中で切れ、
+保存候補（`save_proposal` ツールの呼び出し）が最後まで到達せずに消えます。
+
+Site configuration → Environment variables から、この変数を**削除する**（コードの既定値 64000 が使われる）か、
+`64000` に設定し直してください。応答はストリーミングなので大きくしてもタイムアウトせず、
+課金は実際に生成されたトークン数に対して発生するため、上限を上げても短い回答が高くなることはありません。
+
 ### `STORAGE_DRIVER=blobs` は必須
 
 省略すると、Netlify Functionsの読み取り専用のファイルシステムにJSONファイルを書き込もうとして
@@ -42,7 +52,8 @@ Netlifyでは `STORAGE_DRIVER=blobs` の明示設定が確実です。
      AIコーチのチャット・ロールプレイだけが「未設定です」という案内になる。それ以外の機能
      ──ログイン、顧客カルテ、商談記録、メンバー管理、次回行動、自社営業知識──は問題なく
      確認できる。課金はキー設定後に実際にメッセージを送ったときのみ発生する）
-   - `ANTHROPIC_MODEL` / `ANTHROPIC_MAX_TOKENS`（任意。既定値は `claude-opus-5` / `8000`）
+   - `ANTHROPIC_MODEL` / `ANTHROPIC_MAX_TOKENS`（任意。既定値は `claude-opus-5` / `64000`。
+     `ANTHROPIC_MAX_TOKENS` は**設定しないことを推奨**する。下記の注意を参照）
 4. **Deploys → Trigger deploy** でビルドを開始
 
 ### Netlify CLIから直接デプロイする場合

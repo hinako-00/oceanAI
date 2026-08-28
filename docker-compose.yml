@@ -11,7 +11,7 @@ services:
       # .env に書いた値が読み込まれる（.env.example を参照）
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?ANTHROPIC_API_KEY を .env に設定してください}
       ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5}
-      ANTHROPIC_MAX_TOKENS: ${ANTHROPIC_MAX_TOKENS:-8000}
+      ANTHROPIC_MAX_TOKENS: ${ANTHROPIC_MAX_TOKENS:-64000}
       DATA_DIR: /data
       NODE_ENV: production
     volumes:

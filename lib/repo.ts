@@ -14,7 +14,7 @@ import type {
   User,
   UserRole,
 } from './types';
-import type { ExtractedUpdate } from './extract';
+import type { ExtractedUpdate } from './proposal';
 
 /** アプリ内で共有するデータ操作。API ルートからはこの層だけを呼ぶ。 */
 

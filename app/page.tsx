@@ -193,7 +193,7 @@ export default function ChatPage() {
       const decoder = new TextDecoder();
       let buffer = '';
       let answer = '';
-      let finished: { sessionId: string; proposalId?: string } | null = null;
+      let finished: { sessionId: string; proposalId?: string; truncated?: boolean } | null = null;
 
       for (;;) {
         const { value, done } = await reader.read();
@@ -205,7 +205,7 @@ export default function ChatPage() {
           if (!line.trim()) continue;
           const event = JSON.parse(line) as
             | { type: 'delta'; text: string }
-            | { type: 'done'; sessionId: string; proposalId?: string }
+            | { type: 'done'; sessionId: string; proposalId?: string; truncated?: boolean }
             | { type: 'error'; message: string };
           if (event.type === 'delta') {
             answer += event.text;
@@ -213,7 +213,11 @@ export default function ChatPage() {
           } else if (event.type === 'error') {
             throw new Error(event.message);
           } else {
-            finished = { sessionId: event.sessionId, proposalId: event.proposalId };
+            finished = {
+              sessionId: event.sessionId,
+              proposalId: event.proposalId,
+              truncated: event.truncated,
+            };
           }
         }
       }
@@ -231,6 +235,13 @@ export default function ChatPage() {
 
       if (finished) {
         setSessionId(finished.sessionId);
+        // 出力の上限に当たった回答は途中で切れており、保存候補も出ていない。
+        // 完成した回答のように見せない。
+        if (finished.truncated) {
+          setError(
+            '回答が長くなりすぎて途中で切れました。対象を絞って聞き直すか、商談メモを分割してお試しください。',
+          );
+        }
         const bootstrap = await reload();
         if (finished.proposalId) {
           setProposal(bootstrap.pendingProposals.find((p) => p.id === finished!.proposalId) ?? null);

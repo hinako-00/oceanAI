@@ -231,50 +231,24 @@ H. その他
 ・内部の詳細な思考過程は開示せず、判断理由を簡潔に説明する`;
 
 /**
- * 継続学習用の更新候補を機械可読な形で受け取るための出力契約。
- * 本文の最後に1つだけ付与させ、アプリ側で切り出して保存候補として扱う。
+ * 保存候補の出し方の指示。
+ * 実際の構造は save_proposal ツールのスキーマ（lib/proposal.ts）が持つので、
+ * ここでは「いつ・どういう姿勢で呼ぶか」だけを書く。
  */
-export const OUTPUT_CONTRACT = `# 保存候補の出力（アプリ連携用）
+export const OUTPUT_CONTRACT = `# 保存候補の登録（アプリ連携用）
 
-回答の本文を書き終えた後、保存すべき更新候補がある場合に限り、本文の最後に次のブロックを **1つだけ** 追加してください。
-更新候補がない場合、ブロック自体を出力しないでください。ブロックの前後に説明文を書かないでください。
+会話や商談記録から、顧客カルテ・営業傾向・次回行動・社内知識に反映すべき内容を読み取れた場合は、
+**本文の回答を書き終えたあとに** save_proposal ツールを呼んでください。
 
-<<<SALES_UPDATE
-{
-  "customerUpdate": {
-    "customerId": "既存顧客のID。新規なら省略",
-    "displayName": "顧客の表示名",
-    "fields": [
-      { "key": "coreIssue", "value": "内容", "source": "confirmed | rep_report | ai_hypothesis", "evidence": "根拠となる発言や記述（短く）" }
-    ],
-    "openQuestions": ["未確認事項"]
-  },
-  "patternUpdates": [
-    {
-      "axis": "questioning",
-      "category": "strength | habit | improve | goodFit | hardFit | nextTry | change",
-      "text": "観察された傾向",
-      "basis": "判断の根拠",
-      "confidence": "low | mid | high",
-      "dataCount": 1,
-      "neededData": "判断に必要な追加データ"
-    }
-  ],
-  "nextActions": [
-    { "purpose": "目的", "action": "具体的な行動", "due": "YYYY-MM-DD" }
-  ],
-  "knowledgeCandidates": [
-    { "type": "product | rule | case | talk", "title": "見出し", "body": "内容", "tags": ["タグ"] }
-  ]
-}
->>>
+・本文より先にツールを呼ばないでください。担当者が読むのは本文です。
+・反映すべき内容が何もない場合は、ツールを呼ばないでください。空の呼び出しはしないでください。
+・呼び出しは1回だけにしてください。
+・ツールを呼んだことを本文に書かないでください。画面には確認用の一覧が自動で表示されます。
+・ここで渡した内容はまだ保存されません。担当者が画面で1件ずつ確認し、承認したものだけが保存されます。
 
-ブロックに関する厳守事項:
-・fields の key は次のいずれか: customerName, companyName, demographics, leadSource, currentSituation, surfaceRequest, coreIssue, idealState, impactIfIgnored, triedSolutions, productInterest, concerns, budget, timeline, decisionMakers, competitors, trustLevel, temperature, nextPromise, nextAction
-・axis は次のいずれか: relationship, empathy, questioning, digging, listening, logic, brevity, proposal, objection, pricing, closing, nextAction, adaptation, compliance
-・source は必ず実態に合わせる。顧客が明確に発言した内容だけを confirmed とする。担当者の解釈は rep_report、あなたの推測は ai_hypothesis とする。
-・未確認の項目を推測で埋めて fields に入れない。未確認は openQuestions に入れる。
-・このブロックは保存の「候補」であり、担当者が画面上で承認するまで保存されない。`;
+情報源の区別（source）は特に厳密に守ってください。
+顧客が明確に発言した内容だけを confirmed とし、担当者の解釈は rep_report、あなたの推測は ai_hypothesis とします。
+情報がない項目を推測で埋めて fields に入れないでください。未確認のものは openQuestions に入れてください。`;
 
 /** ロールプレイ中の上書き指示。顧客役に徹させる。 */
 export function roleplayOverride(config: RoleplayConfig): string {
@@ -290,7 +264,7 @@ export function roleplayOverride(config: RoleplayConfig): string {
 
 ロールプレイ中の厳守事項:
 ・顧客としての発言のみを返す。コーチとしての解説、評価、助言は一切しない。
-・【総評】などの分析見出しを使わない。保存候補ブロックも出力しない。
+・【総評】などの分析見出しを使わない。save_proposal ツールも呼ばない。
 ・設定に矛盾しない範囲で、実在の顧客のように曖昧さや迷いを含めて話す。
 ・難易度が「難しい」の場合は、簡単には本音を話さず、価格や導入負荷への懸念を強めに出す。
 ・担当者の質問が浅い場合は、浅い回答のまま返す（親切に補完しない）。

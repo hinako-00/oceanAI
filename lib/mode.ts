@@ -1,8 +1,13 @@
 import type { Mode } from './types';
 
 /**
- * セッションの見出し表示用に、入力からモードを推定する。
- * 実際の応答の作り分けはモデル側の判断に任せる（ここでの推定は表示ラベルのみに使う）。
+ * 入力からモードを推定する。
+ *
+ * 推定結果は表示ラベルだけでなく、システムプロンプトの「今回のモード」（prompt.ts の
+ * modeHint）と推論の深さ（effortFor）にも使われる。つまり誤検知はモデルを
+ * 誤った仕事へ誘導するため、判定はターンごとにやり直すこと。
+ * セッション作成時に一度決めて固定すると、途中で話題が変わったときに
+ * 古い指示が残り続ける。
  */
 const RULES: Array<{ mode: Mode; patterns: RegExp[] }> = [
   { mode: 'F', patterns: [/ロープレ/, /ロールプレイ/, /顧客役/, /練習した/] },
@@ -19,6 +24,23 @@ export function detectMode(text: string): Mode {
     if (rule.patterns.some((pattern) => pattern.test(text))) return rule.mode;
   }
   return 'H';
+}
+
+/** 推論の深さ。API の既定は high。 */
+export type Effort = 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+
+/**
+ * 分析が重いモードだけ推論を深くする。
+ *
+ * 商談の振り返り（B）、営業上の問題解決（D）、営業傾向の分析（G）は、
+ * 複数の記録を突き合わせて根拠つきの判断を組み立てる仕事なので推論の深さが効く。
+ * 一方で知識質問（E）やロールプレイ（F）の1発言は深く考えても質が変わらず、
+ * 待ち時間とトークン代だけが増えるため既定のままにする。
+ */
+const DEEP_MODES: Mode[] = ['B', 'D', 'G'];
+
+export function effortFor(mode: Mode | null): Effort {
+  return mode && DEEP_MODES.includes(mode) ? 'xhigh' : 'high';
 }
 
 /** セッション一覧に出す見出しを入力から作る。 */

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { buildContextBlock, formatCustomer, formatTendencies } from '../lib/context';
-import type { Customer, User } from '../lib/types';
+import { buildContextBlock, formatCustomer, formatMeetings, formatTendencies } from '../lib/context';
+import type { Customer, Meeting, User } from '../lib/types';
 
 const customer: Customer = {
   id: 'c1',
@@ -50,4 +50,65 @@ test('参照情報ブロックに仕様のすべての見出しが含まれる',
   for (const heading of ['【利用者情報】', '【過去の営業傾向】', '【顧客情報】', '【過去の商談履歴】', '【自社営業知識】']) {
     assert.ok(block.includes(heading), `${heading} が含まれていない`);
   }
+});
+
+function meeting(overrides: Partial<Meeting>): Meeting {
+  return {
+    id: 'm1',
+    customerId: 'c1',
+    repId: 'rep-default',
+    date: '2026-08-01',
+    title: '初回ヒアリング',
+    stage: 'ヒアリング',
+    outcome: '継続',
+    inputType: 'transcript',
+    rawInput: '',
+    createdAt: '2026-08-01T00:00:00Z',
+    ...overrides,
+  };
+}
+
+test('長い文字起こしは前半だけでなく終盤も残す', () => {
+  // 次回の約束・決裁者・予算といった「次の一手を決める情報」は終盤に出る。
+  // 先頭から一律に切ると、そこが必ず失われる。
+  const raw = ['冒頭の雑談です。', 'あ'.repeat(60000), '最後に決裁は部長が行うと伺いました。'].join('\n');
+  const text = formatMeetings([meeting({ rawInput: raw })]);
+
+  assert.ok(text.includes('冒頭の雑談です。'), '冒頭が残っていない');
+  assert.ok(text.includes('最後に決裁は部長が行うと伺いました。'), '終盤が残っていない');
+  assert.match(text, /中略：\d+文字を省略/);
+});
+
+test('原文が上限に収まるなら省略しない', () => {
+  const text = formatMeetings([meeting({ rawInput: '短い商談メモです。', inputType: 'memo' })]);
+  assert.ok(text.includes('短い商談メモです。'));
+  assert.ok(!text.includes('中略'), '省略の必要がないのに中略が入っている');
+  assert.ok(text.includes('[商談メモ]'));
+});
+
+test('古い商談も見出しだけにせず抜粋を添える', () => {
+  // 見出しだけでは「商談があった」ことしか分からず、参照する意味がない。
+  const meetings = Array.from({ length: 8 }, (_, i) =>
+    meeting({
+      id: `m${i}`,
+      // 新しい順に並べ替えられるので、日付で順序を作る。
+      date: `2026-08-${String(20 - i).padStart(2, '0')}`,
+      rawInput: `${i}件目の商談の中身です。`,
+    }),
+  );
+  const text = formatMeetings(meetings);
+  // 6件目以降（原文を厚く付けない側）も中身が読める。
+  assert.ok(text.includes('7件目の商談の中身です。'), '古い商談の中身が落ちている');
+});
+
+test('参照情報に本日の日付が入る（次回行動の期限の基準）', () => {
+  const block = buildContextBlock({
+    today: '2026-08-28',
+    customer: undefined,
+    meetings: [],
+    knowledge: [],
+    nextActions: [],
+  });
+  assert.ok(block.includes('【本日の日付】'));
+  assert.ok(block.includes('2026-08-28'));
 });

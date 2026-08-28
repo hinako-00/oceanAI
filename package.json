@@ -13,7 +13,7 @@
     "test": "tsc -p tsconfig.test.json && node --test '.test-build/tests/*.test.js'"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.65.0",
+    "@anthropic-ai/sdk": "^0.122.0",
     "@netlify/blobs": "^11.0.1",
     "next": "^15.5.4",
     "react": "^19.1.1",

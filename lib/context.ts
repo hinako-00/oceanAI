@@ -14,13 +14,35 @@ import type { Customer, Knowledge, Meeting, NextAction, User } from './types';
  * 仕様のテンプレート（【利用者情報】〜【今回の入力】）に対応する。
  */
 
-/** 1件あたりの原文の上限。長い文字起こしでコンテキストを食い潰さないようにする。 */
-const RAW_INPUT_LIMIT = 6000;
+/**
+ * 1件あたりの原文の上限。
+ *
+ * 1時間の商談の文字起こしは2〜4万字になる。以前は6000字だったが、
+ * それでは雑談から始まる冒頭だけが残り、次回の約束・意思決定者・予算・反論といった
+ * 「次の一手を決める情報」が集まる終盤が丸ごと捨てられていた。
+ * 参照するモデルは100万トークンの文脈を持つので、ここを絞る意味は薄い。
+ */
+const RAW_INPUT_LIMIT = 30000;
+/** 原文を添えない古い商談に付ける抜粋の長さ。 */
+const EXCERPT_LIMIT = 1200;
 const KNOWLEDGE_LIMIT = 2000;
 
+/**
+ * 上限を超えるテキストを、前半と後半を残して中央を省く。
+ *
+ * 商談は「冒頭の状況説明」と「終盤の合意・宿題」の両方が重要で、
+ * 先頭から一律に切ると後者が必ず失われる。
+ */
 function truncate(text: string, limit: number): string {
   if (text.length <= limit) return text;
-  return `${text.slice(0, limit)}\n…（以下省略：全${text.length}文字）`;
+  // 終盤の情報密度が高いので、後半をやや厚く残す。
+  const head = Math.floor(limit * 0.45);
+  const tail = limit - head;
+  return [
+    text.slice(0, head),
+    `\n…（中略：${text.length - limit}文字を省略。全${text.length}文字）…\n`,
+    text.slice(text.length - tail),
+  ].join('');
 }
 
 export function formatRep(rep: User | undefined): string {
@@ -75,19 +97,25 @@ export function formatCustomer(customer: Customer | undefined): string {
   return lines.join('\n');
 }
 
+const INPUT_TYPE_LABEL: Record<Meeting['inputType'], string> = {
+  transcript: '文字起こし',
+  memo: '商談メモ',
+  chat: 'チャット記録',
+};
+
 export function formatMeetings(meetings: Meeting[]): string {
   if (meetings.length === 0) return '過去の商談履歴なし';
-  // 直近の商談ほど重要なので新しい順に並べ、原文は直近3件のみ添付する。
+  // 直近の商談ほど重要なので新しい順に並べ、原文は直近5件に添付する。
   const sorted = [...meetings].sort((a, b) => b.date.localeCompare(a.date));
   return sorted
-    .slice(0, 8)
+    .slice(0, 10)
     .map((m, index) => {
       const head = `■ ${m.date} ${m.title}（段階: ${m.stage || '未設定'} ／ 結果: ${m.outcome || '未記録'}）`;
-      if (index < 3 && m.rawInput) {
-        return `${head}\n[${m.inputType === 'transcript' ? '文字起こし' : m.inputType === 'memo' ? '商談メモ' : 'チャット記録'}]\n${truncate(m.rawInput, RAW_INPUT_LIMIT)}`;
-      }
-      if (m.analysis) return `${head}\n[分析要約]\n${truncate(m.analysis, 800)}`;
-      return head;
+      if (!m.rawInput) return m.analysis ? `${head}\n[分析要約]\n${truncate(m.analysis, 800)}` : head;
+      // 古い商談も見出しだけにはしない。何があったか分からないと参照する意味がないため、
+      // 原文を短く抜粋して添える。
+      const limit = index < 5 ? RAW_INPUT_LIMIT : EXCERPT_LIMIT;
+      return `${head}\n[${INPUT_TYPE_LABEL[m.inputType]}]\n${truncate(m.rawInput, limit)}`;
     })
     .join('\n\n');
 }
@@ -108,6 +136,8 @@ export function formatNextActions(actions: NextAction[]): string {
 }
 
 export interface ContextInput {
+  /** 本日の日付（YYYY-MM-DD）。テストから固定するために外から渡せるようにしている。 */
+  today?: string;
   rep?: User;
   customer?: Customer;
   meetings: Meeting[];
@@ -119,6 +149,11 @@ export interface ContextInput {
 export function buildContextBlock(input: ContextInput): string {
   return [
     '以下はアプリに保存されている参照情報です。ここに書かれていない情報を「確認済みの事実」として扱わないでください。',
+    '',
+    // 期限（次回行動の due）を決めるには今日が何日か分かっている必要がある。
+    // 日付までなので、1日に1回しか変わらず、プロンプトキャッシュを壊さない。
+    '【本日の日付】',
+    input.today ?? new Date().toISOString().slice(0, 10),
     '',
     '【利用者情報】',
     formatRep(input.rep),
