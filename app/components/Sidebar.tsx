@@ -62,7 +62,7 @@ export default function Sidebar({ user }: { user: PublicUser }) {
           ログアウト
         </button>
         <div className="faint" style={{ marginTop: 10 }}>
-          顧客カルテ・商談履歴・営業傾向はチームで共有されます。相談の履歴は本人だけが見られます。
+          顧客情報・アポ履歴・営業傾向はチームで共有されます。相談の履歴は本人だけが見られます。
         </div>
       </div>
     </aside>

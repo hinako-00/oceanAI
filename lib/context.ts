@@ -17,20 +17,20 @@ import type { Customer, Knowledge, Meeting, NextAction, User } from './types';
 /**
  * 1件あたりの原文の上限。
  *
- * 1時間の商談の文字起こしは2〜4万字になる。以前は6000字だったが、
+ * 1時間のアポの文字起こしは2〜4万字になる。以前は6000字だったが、
  * それでは雑談から始まる冒頭だけが残り、次回の約束・意思決定者・予算・反論といった
  * 「次の一手を決める情報」が集まる終盤が丸ごと捨てられていた。
  * 参照するモデルは100万トークンの文脈を持つので、ここを絞る意味は薄い。
  */
 const RAW_INPUT_LIMIT = 30000;
-/** 原文を添えない古い商談に付ける抜粋の長さ。 */
+/** 原文を添えない古いアポに付ける抜粋の長さ。 */
 const EXCERPT_LIMIT = 1200;
 const KNOWLEDGE_LIMIT = 2000;
 
 /**
  * 上限を超えるテキストを、前半と後半を残して中央を省く。
  *
- * 商談は「冒頭の状況説明」と「終盤の合意・宿題」の両方が重要で、
+ * アポは「冒頭の状況説明」と「終盤の合意・宿題」の両方が重要で、
  * 先頭から一律に切ると後者が必ず失われる。
  */
 function truncate(text: string, limit: number): string {
@@ -78,7 +78,7 @@ export function formatTendencies(rep: User | undefined): string {
 }
 
 export function formatCustomer(customer: Customer | undefined): string {
-  if (!customer) return '顧客未選択（顧客カルテの参照情報なし）';
+  if (!customer) return '顧客未選択（顧客情報の参照情報なし）';
   const lines: string[] = [`顧客ID: ${customer.id}`, `表示名: ${customer.displayName}`];
   for (const key of CUSTOMER_FIELD_KEYS) {
     const field = customer.fields[key];
@@ -99,20 +99,20 @@ export function formatCustomer(customer: Customer | undefined): string {
 
 const INPUT_TYPE_LABEL: Record<Meeting['inputType'], string> = {
   transcript: '文字起こし',
-  memo: '商談メモ',
+  memo: 'アポメモ',
   chat: 'チャット記録',
 };
 
 export function formatMeetings(meetings: Meeting[]): string {
-  if (meetings.length === 0) return '過去の商談履歴なし';
-  // 直近の商談ほど重要なので新しい順に並べ、原文は直近5件に添付する。
+  if (meetings.length === 0) return '過去のアポ履歴なし';
+  // 直近のアポほど重要なので新しい順に並べ、原文は直近5件に添付する。
   const sorted = [...meetings].sort((a, b) => b.date.localeCompare(a.date));
   return sorted
     .slice(0, 10)
     .map((m, index) => {
       const head = `■ ${m.date} ${m.title}（段階: ${m.stage || '未設定'} ／ 結果: ${m.outcome || '未記録'}）`;
       if (!m.rawInput) return m.analysis ? `${head}\n[分析要約]\n${truncate(m.analysis, 800)}` : head;
-      // 古い商談も見出しだけにはしない。何があったか分からないと参照する意味がないため、
+      // 古いアポも見出しだけにはしない。何があったか分からないと参照する意味がないため、
       // 原文を短く抜粋して添える。
       const limit = index < 5 ? RAW_INPUT_LIMIT : EXCERPT_LIMIT;
       return `${head}\n[${INPUT_TYPE_LABEL[m.inputType]}]\n${truncate(m.rawInput, limit)}`;
@@ -167,7 +167,7 @@ export function buildContextBlock(input: ContextInput): string {
     '【顧客情報】',
     formatCustomer(input.customer),
     '',
-    '【過去の商談履歴】',
+    '【過去のアポ履歴】',
     formatMeetings(input.meetings),
     '',
     '【自社営業知識】',

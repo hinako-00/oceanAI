@@ -103,7 +103,7 @@ export async function POST(request: Request) {
   // 一度きりの推定を使い回さない。担当者が画面で明示的に選んでいればそれを尊重し、
   // 「自動判定」のままなら毎ターン入力から推定し直す。
   // こうしないと、準備の相談で始めた会話に途中で文字起こしを貼っても
-  // 「商談前の準備をしています」という古い指示が残り続ける。
+  // 「アポ前の準備をしています」という古い指示が残り続ける。
   let turnMode: Mode | null;
   if (inRoleplay || body.roleplay?.action === 'start') {
     turnMode = 'F';
@@ -134,7 +134,7 @@ export async function POST(request: Request) {
   // 参照情報（カルテ・文字起こし・自社知識）が一番大きいので、ここまでをキャッシュに載せる。
   const system = buildSystem([
     { text: SYSTEM_PROMPT, cache: true },
-    // ロールプレイ中は保存候補を出させない（顧客役に徹させるため）。
+    // ロールプレイ中は保存候補を出させない（お客様役に徹させるため）。
     { text: inRoleplay ? '' : OUTPUT_CONTRACT },
     { text: contextBlock, cache: true },
     { text: modeHint(turnMode) },
@@ -184,7 +184,7 @@ export async function POST(request: Request) {
           thinking: { type: 'adaptive' },
           output_config: { effort: effortFor(turnMode) },
           system,
-          // ロールプレイ中は顧客役に徹させるため、保存候補のツールを渡さない。
+          // ロールプレイ中はお客様役に徹させるため、保存候補のツールを渡さない。
           ...(inRoleplay ? {} : { tools: [SAVE_PROPOSAL_TOOL] }),
           messages,
         });

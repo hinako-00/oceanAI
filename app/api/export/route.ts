@@ -61,7 +61,7 @@ export async function GET(request: Request) {
       const [meetings, customers] = await Promise.all([listMeetings(), listCustomers()]);
       const customerName = (id: string) =>
         customers.find((c) => c.id === id)?.displayName ?? '（削除済み）';
-      rows.push(['商談日', '顧客', '担当者', '商談名', '段階', '結果', '入力の種類', '商談メモ・文字起こし']);
+      rows.push(['アポの日付', '顧客', '担当者', 'アポの名称', '段階', '結果', '入力の種類', 'アポメモ・文字起こし']);
       for (const meeting of meetings) {
         rows.push([
           meeting.date,

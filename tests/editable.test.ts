@@ -5,7 +5,7 @@ import { pickKnowledgePatch, pickMeetingPatch, pickNextActionPatch } from '../li
 
 test('所有者を書き換えようとしても通さない', () => {
   // 型アサーションは実行時に何も守らない。repId を混ぜれば
-  // 他人の商談記録にすり替えられる、という状態を塞いでいる。
+  // 他人のアポ記録にすり替えられる、という状態を塞いでいる。
   const patch = pickMeetingPatch({
     title: '初回ヒアリング',
     repId: '別のメンバーのID',
@@ -29,7 +29,7 @@ test('次回行動も担当者を書き換えられない', () => {
 });
 
 test('日付の形式が崩れているものは捨てて既存の値を残す', () => {
-  // 商談日が壊れると一覧の並びと商談履歴の順序が壊れる。
+  // アポの日付が壊れると一覧の並びとアポ履歴の順序が壊れる。
   assert.equal('date' in pickMeetingPatch({ date: '来週' }), false);
   assert.equal('date' in pickMeetingPatch({ date: '2026/09/01' }), false);
   assert.equal(pickMeetingPatch({ date: '2026-09-01' }).date, '2026-09-01');
@@ -55,7 +55,7 @@ test('タグは文字列だけを残す', () => {
 });
 
 test('空文字での上書きは許す（値を消したい場合があるため）', () => {
-  // 商談名や段階は「やっぱり空にしたい」ことがある。
+  // アポの名称や段階は「やっぱり空にしたい」ことがある。
   assert.equal(pickMeetingPatch({ title: '' }).title, '');
   assert.equal(pickMeetingPatch({ stage: '' }).stage, '');
 });

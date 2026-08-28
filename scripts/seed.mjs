@@ -30,26 +30,27 @@ const customerId = randomUUID();
 // ownerRepId は初期設定で作られる最初の管理者（IDは rep-default を引き継ぐ）に一致させる。
 const customer = {
   id: customerId,
-  displayName: '株式会社みなと製作所',
+  displayName: '田中 一郎',
   fields: {
-    companyName: { value: '株式会社みなと製作所', source: 'confirmed', updatedAt: now },
-    demographics: { value: '総務部長（40代）', source: 'confirmed', updatedAt: now },
-    leadSource: { value: '展示会での名刺交換', source: 'rep_report', updatedAt: now },
+    customerName: { value: '田中 一郎', source: 'confirmed', updatedAt: now },
+    companyName: { value: '会社員（IT系・共働き）', source: 'confirmed', updatedAt: now },
+    demographics: { value: '30代後半・配偶者と子ども2人・賃貸', source: 'confirmed', updatedAt: now },
+    leadSource: { value: 'InstagramのPR投稿から問い合わせ', source: 'rep_report', updatedAt: now },
     currentSituation: {
-      value: '勤怠管理をExcelで運用。月次の締めに総務3名で3日かかっている',
+      value: '家計簿アプリを入れたが続かず、毎月の支出を把握できていない',
       source: 'confirmed',
-      evidence: '締めのたびに総務が3日かかっています',
+      evidence: '家計簿は三日坊主で終わってしまって',
       updatedAt: now,
     },
-    surfaceRequest: { value: '勤怠の集計を自動化したい', source: 'confirmed', updatedAt: now },
+    surfaceRequest: { value: '毎月の支出を自動で把握したい', source: 'confirmed', updatedAt: now },
     coreIssue: {
-      value: '締め作業の属人化により、担当者の休職時に業務が止まるリスクがある',
+      value: '教育費の見通しが立たず、貯蓄できているのか不安な状態が続いている',
       source: 'ai_hypothesis',
-      evidence: '「担当が休むと回らない」という発言からの推測',
+      evidence: '「このままで足りるのか分からない」という発言からの推測',
       updatedAt: now,
     },
   },
-  openQuestions: ['予算の上限', '導入希望時期', '比較検討している他社', '決裁フローと決裁者'],
+  openQuestions: ['月々に出せる金額', '始めたい時期', '比較検討している他社', '配偶者への相談状況'],
   ownerRepId: 'rep-default',
   createdAt: now,
   updatedAt: now,
@@ -64,12 +65,12 @@ const meeting = {
   stage: 'ヒアリング',
   inputType: 'transcript',
   rawInput: [
-    '担当：本日はお時間ありがとうございます。まず現在の勤怠管理について教えていただけますか。',
-    '顧客：Excelでやっています。締めのたびに総務が3日かかっていて、正直しんどいですね。',
-    '担当：3日ですか。それは大変ですね。弊社のサービスなら集計は自動化できますし、承認もスマホで完結します。',
-    '顧客：なるほど。ただ、うちは現場がITに強くないので、使いこなせるか不安で。',
-    '担当：操作は簡単なので大丈夫ですよ。導入企業様でも問題なく使えています。',
-    '顧客：そうですか。一度社内で相談してみます。',
+    '担当：本日はお時間ありがとうございます。まず今の家計の管理について教えていただけますか。',
+    'お客様：家計簿アプリを入れたんですが、三日坊主で終わってしまって。今いくら使っているかも把握できていません。',
+    '担当：そうなんですね。弊社のサービスなら口座と連携して自動で集計されますし、スマホで完結します。',
+    'お客様：なるほど。ただ、毎月の固定費が増えるのは正直こわくて。',
+    '担当：月々のご負担は抑えられますので大丈夫ですよ。多くの方にご利用いただいています。',
+    'お客様：そうですか。一度、妻と相談してみます。',
     '担当：ぜひご検討ください。来週あらためてご連絡します。',
   ].join('\n'),
   outcome: '検討中',
@@ -80,8 +81,8 @@ const knowledge = [
   {
     id: randomUUID(),
     type: 'rule',
-    title: '値引きの承認ルール',
-    body: '定価からの値引きは10%までは担当判断で可能。10%超は部長承認、20%超は本部長承認が必要。値引きの前に、まず導入範囲の調整を提案すること。',
+    title: '割引の承認ルール',
+    body: '定価からの割引は10%までは担当判断で可能。10%超は上長承認が必要。割引の前に、まずプランの見直し（機能を絞る・開始時期をずらす）を提案すること。金額の話に入る前に、月々いくらなら無理がないかを必ず確認する。',
     tags: ['価格', '社内ルール'],
     createdAt: now,
     updatedAt: now,
@@ -89,9 +90,9 @@ const knowledge = [
   {
     id: randomUUID(),
     type: 'case',
-    title: '製造業（従業員80名）の受注事例',
-    body: '締め作業の工数を「1回あたり何人日か」で数値化してもらったことで、年間コストが可視化され稟議が通った。現場のIT習熟への不安には、初回3か月の伴走サポートを提示して解消した。',
-    tags: ['製造業', '成功事例', '不安対応'],
+    title: '30代共働き世帯の成約事例',
+    body: '「毎月いくら貯められていないか」を一緒に計算したことで、支出の曖昧さが本人の言葉で具体化され、必要性が腑に落ちた。固定費が増えることへの不安には、初月無料と「いつでも解約できる」ことを先に伝えて解消した。配偶者への相談が必要だったため、その場で決めさせず、説明用の資料を渡して1週間後に再連絡した。',
+    tags: ['共働き世帯', '成功事例', '不安対応'],
     createdAt: now,
     updatedAt: now,
   },
@@ -108,6 +109,6 @@ await write('meetings.json', [meeting]);
 await write('knowledge.json', knowledge);
 console.log('デモデータを投入しました:');
 console.log('  ※ 担当者は初期設定で作成する最初の管理者になります');
-console.log('  顧客カルテ 1件（未確認事項つき）');
-console.log('  商談履歴 1件（文字起こし）');
+console.log('  顧客情報 1件（未確認事項つき）');
+console.log('  アポ履歴 1件（文字起こし）');
 console.log(`  自社営業知識 ${knowledge.length}件`);

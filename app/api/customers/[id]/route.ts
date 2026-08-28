@@ -48,7 +48,7 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 }
 
-/** 削除は商談履歴も消えるため、担当者本人と管理者に限定する。 */
+/** 削除はアポ履歴も消えるため、担当者本人と管理者に限定する。 */
 export async function DELETE(_request: Request, { params }: Params) {
   try {
     const user = await requireUser();

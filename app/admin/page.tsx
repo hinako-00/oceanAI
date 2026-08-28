@@ -60,7 +60,7 @@ export default function AdminPage() {
         <h1 className="page-title">メンバー管理</h1>
         <p className="page-desc">
           営業担当者のアカウントを管理します。退職・異動時は削除せず「無効化」してください。
-          過去の商談履歴との紐付けが残ります。
+          過去のアポ履歴との紐付けが残ります。
         </p>
       </div>
 

@@ -7,7 +7,7 @@ import type { MeetingInputType } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
-/** 商談履歴もチーム共有。誰の商談かは repId で残る。 */
+/** アポ履歴もチーム共有。誰のアポかは repId で残る。 */
 export async function GET(request: Request) {
   try {
     await requireUser();
@@ -31,13 +31,13 @@ export async function POST(request: Request) {
       outcome?: string;
     };
     if (!body.customerId) throw new Error('顧客を選択してください。');
-    if (!body.rawInput?.trim()) throw new Error('商談メモまたは文字起こしを入力してください。');
+    if (!body.rawInput?.trim()) throw new Error('アポメモまたは文字起こしを入力してください。');
 
     const meeting = await addMeeting({
       customerId: body.customerId,
       repId: user.id,
       date: body.date || new Date().toISOString().slice(0, 10),
-      title: body.title?.trim() || '商談',
+      title: body.title?.trim() || 'アポ',
       stage: body.stage?.trim() || '',
       inputType: body.inputType ?? 'memo',
       rawInput: body.rawInput,

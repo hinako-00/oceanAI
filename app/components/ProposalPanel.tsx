@@ -104,7 +104,7 @@ export default function ProposalPanel({ proposal, customers, currentCustomerId, 
       {customerUpdate && (
         <section style={{ marginBottom: 12 }}>
           <div className="faint" style={{ marginBottom: 4 }}>
-            顧客カルテ
+            顧客情報
           </div>
           <label className="field" style={{ marginBottom: 6 }}>
             <span>反映先</span>

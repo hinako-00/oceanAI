@@ -20,7 +20,7 @@ const SOURCE_CLASS: Record<FactSource, string> = {
 
 const EDITABLE_SOURCES: FactSource[] = ['confirmed', 'rep_report', 'ai_hypothesis'];
 
-/** 顧客カルテの詳細。項目ごとに値と情報源を編集できる。 */
+/** 顧客情報の詳細。項目ごとに値と情報源を編集できる。 */
 export default function CustomerDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -98,7 +98,7 @@ export default function CustomerDetailPage() {
 
   const remove = async () => {
     if (!customer) return;
-    if (!confirm('この顧客と商談履歴を削除しますか？チーム全員から見えなくなります。')) return;
+    if (!confirm('この顧客とアポ履歴を削除しますか？チーム全員から見えなくなります。')) return;
     try {
       await api(`/api/customers/${customer.id}`, { method: 'DELETE' });
       router.push('/customers');
@@ -212,12 +212,12 @@ export default function CustomerDetailPage() {
             className="btn-primary"
             onClick={() =>
               askCoach(
-                'この顧客との次回商談の準備をしたいです。目的、優先質問、想定反論、着地点を整理してください。',
+                'この顧客との次回アポの準備をしたいです。目的、優先質問、想定反論、着地点を整理してください。',
                 'A',
               )
             }
           >
-            次回商談の準備を相談
+            次回アポの準備を相談
           </button>
           {(customer.ownerRepId === me?.id || me?.role === 'admin') && (
             <button type="button" className="btn-danger" onClick={remove}>
@@ -247,7 +247,7 @@ export default function CustomerDetailPage() {
             {filledKeys.length} / {CUSTOMER_FIELD_KEYS.length} 項目 確認済み
           </span>
         </div>
-        {/* どこまで埋まっているかを一目で見せる。カルテの完成度が次の商談の準備につながる。 */}
+        {/* どこまで埋まっているかを一目で見せる。カルテの完成度が次のアポの準備につながる。 */}
         <div className="meter" aria-hidden="true">
           <div
             className="meter-fill"
@@ -258,7 +258,7 @@ export default function CustomerDetailPage() {
         {filledKeys.length === 0 ? (
           <div className="empty" style={{ marginTop: 12 }}>
             まだ確認できた項目がありません。下の「未確認の項目」から埋めるか、
-            商談を記録してAIに整理させてください。
+            アポを記録してAIに整理させてください。
           </div>
         ) : (
           <table className="rows" style={{ marginTop: 12 }}>
@@ -337,9 +337,9 @@ export default function CustomerDetailPage() {
       </div>
 
       <div className="card">
-        <h2 className="card-title">商談履歴（{meetings.length}件）</h2>
+        <h2 className="card-title">アポ履歴（{meetings.length}件）</h2>
         {meetings.length === 0 ? (
-          <div className="empty">商談記録がありません。「商談を記録」から登録できます。</div>
+          <div className="empty">アポ記録がありません。「アポを記録」から登録できます。</div>
         ) : (
           <div className="stack">
             {meetings.map((meeting) => (
@@ -360,12 +360,12 @@ export default function CustomerDetailPage() {
                     className="btn-sm"
                     onClick={() =>
                       askCoach(
-                        `以下の商談を振り返ってください。\n\n日付: ${meeting.date}\n段階: ${meeting.stage || '未設定'}\n結果: ${meeting.outcome || '未記録'}\n\n${meeting.rawInput}`,
+                        `以下のアポを振り返ってください。\n\n日付: ${meeting.date}\n段階: ${meeting.stage || '未設定'}\n結果: ${meeting.outcome || '未記録'}\n\n${meeting.rawInput}`,
                         'B',
                       )
                     }
                   >
-                    この商談を振り返る
+                    このアポを振り返る
                   </button>
                 </div>
               </details>

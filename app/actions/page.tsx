@@ -163,7 +163,7 @@ export default function ActionsPage() {
             <span>行動</span>
             <input
               value={form.action}
-              placeholder="例：導入時期と決裁フローを確認する"
+              placeholder="例：ご家族への相談状況を確認する"
               onChange={(e) => setForm({ ...form, action: e.target.value })}
             />
           </label>
@@ -171,7 +171,7 @@ export default function ActionsPage() {
             <span>目的</span>
             <input
               value={form.purpose}
-              placeholder="例：意思決定条件を特定するため"
+              placeholder="例：何が決め手になるかを知るため"
               onChange={(e) => setForm({ ...form, purpose: e.target.value })}
             />
           </label>

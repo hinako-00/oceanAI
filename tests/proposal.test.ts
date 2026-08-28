@@ -8,12 +8,12 @@ test('ツール入力を保存候補に変換する', () => {
   const update = parseProposal({
     customerUpdate: {
       customerId: '',
-      displayName: '株式会社A',
+      displayName: '田中 一郎',
       fields: [
-        { key: 'coreIssue', value: '締め処理に月3日', source: 'confirmed', evidence: '3日かかっています' },
-        { key: 'budget', value: '月5万円まで', source: 'rep_report', evidence: '' },
+        { key: 'coreIssue', value: '家計の管理に毎月3日かかっている', source: 'confirmed', evidence: '毎月3日はかかります' },
+        { key: 'budget', value: '月5千円まで', source: 'rep_report', evidence: '' },
       ],
-      openQuestions: ['決裁フロー'],
+      openQuestions: ['ご家族への相談状況'],
     },
     patternUpdates: [
       {
@@ -26,9 +26,9 @@ test('ツール入力を保存候補に変換する', () => {
         neededData: '',
       },
     ],
-    nextActions: [{ purpose: '意思決定条件の特定', action: '決裁者を確認', due: '2026-09-03' }],
+    nextActions: [{ purpose: '決め手の特定', action: 'ご家族への相談状況を確認', due: '2026-09-03' }],
     knowledgeCandidates: [
-      { type: 'case', title: '締め処理の訴求', body: '工数を日数で聞くと響く', tags: ['ヒアリング'] },
+      { type: 'case', title: '家計の負担の訴求', body: '毎月いくら貯められていないかを一緒に計算すると響く', tags: ['ヒアリング'] },
     ],
   });
 

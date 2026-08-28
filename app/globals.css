@@ -773,6 +773,36 @@ label.field > span {
   gap: 16px;
 }
 
+/* 対話／ロープレの切り替え。今どちらで話しているかを常に見せる。 */
+.chat-modes {
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 8px calc(12px + var(--safe-right)) 8px calc(12px + var(--safe-left));
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-panel);
+}
+
+.chat-mode {
+  min-height: 38px;
+  padding: 6px 10px;
+  font-size: 13px;
+  border-color: transparent;
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+}
+
+.chat-mode[data-active='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.chat-mode[data-active='true']:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
 /* 履歴・設定パネル。モバイルではボトムシートとして出す。 */
 .chat-pane {
   position: fixed;
@@ -1376,6 +1406,13 @@ details.disclosure > summary {
 
   .chat-toolbar {
     display: none;
+  }
+
+  .chat-modes {
+    padding: 10px 26px;
+    gap: 8px;
+    justify-content: start;
+    grid-template-columns: repeat(2, minmax(0, 160px));
   }
 
   .chat-pane {

@@ -51,7 +51,7 @@ export async function applyProposal(
     appliedKnowledge: 0,
   };
 
-  // --- 顧客カルテ ---
+  // --- 顧客情報 ---
   const customerUpdate = proposal.customerUpdate;
   const customerSelection = selection.customer;
   if (customerUpdate && customerSelection) {

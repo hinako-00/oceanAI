@@ -8,14 +8,14 @@ import { matches } from '@/lib/search';
 import type { Customer, Meeting, MeetingInputType, PublicUser } from '@/lib/types';
 
 const INPUT_TYPES: Array<{ value: MeetingInputType; label: string }> = [
-  { value: 'memo', label: '商談メモ' },
+  { value: 'memo', label: 'アポメモ' },
   { value: 'transcript', label: '録音の文字起こし' },
   { value: 'chat', label: 'チャット・メールのやりとり' },
 ];
 
 const OUTCOMES = ['継続', '次回アポ確定', '検討中', '保留', '受注', '失注'];
 
-/** 商談を記録し、そのままAIの振り返りに渡す画面。 */
+/** アポを記録し、そのままAIの振り返りに渡す画面。 */
 export default function MeetingsPage() {
   const router = useRouter();
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -24,7 +24,7 @@ export default function MeetingsPage() {
   const [me, setMe] = useState<PublicUser | null>(null);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
-  // 編集中の商談ID。null なら新規登録。上のフォームを編集モードに切り替えて使い回す。
+  // 編集中のアポID。null なら新規登録。上のフォームを編集モードに切り替えて使い回す。
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filter, setFilter] = useState({ query: '', customerId: 'all', outcome: 'all' });
   const [form, setForm] = useState({
@@ -83,7 +83,7 @@ export default function MeetingsPage() {
       return;
     }
     if (!form.rawInput.trim()) {
-      setError('商談メモまたは文字起こしを入力してください。');
+      setError('アポメモまたは文字起こしを入力してください。');
       return;
     }
     setSaving(true);
@@ -101,7 +101,7 @@ export default function MeetingsPage() {
           JSON.stringify({
             customerId: form.customerId,
             mode: 'B',
-            text: `以下の商談を振り返ってください。\n\n日付: ${form.date}\n商談: ${form.title || '未設定'}\n段階: ${form.stage || '未設定'}\n結果: ${form.outcome}\n形式: ${label}\n\n${form.rawInput}`,
+            text: `以下のアポを振り返ってください。\n\n日付: ${form.date}\nアポ: ${form.title || '未設定'}\n段階: ${form.stage || '未設定'}\n結果: ${form.outcome}\n形式: ${label}\n\n${form.rawInput}`,
           }),
         );
         router.push('/');
@@ -118,7 +118,7 @@ export default function MeetingsPage() {
   };
 
   const remove = async (id: string) => {
-    if (!confirm('この商談記録を削除しますか？')) return;
+    if (!confirm('このアポ記録を削除しますか？')) return;
     try {
       await api(`/api/meetings/${id}`, { method: 'DELETE' });
       load();
@@ -135,7 +135,7 @@ export default function MeetingsPage() {
       meetings.filter((m) => {
         if (filter.customerId !== 'all' && m.customerId !== filter.customerId) return false;
         if (filter.outcome !== 'all' && m.outcome !== filter.outcome) return false;
-        // 商談メモの中身からも探せるようにする。「あの話をしたのはどの商談だったか」を辿れる。
+        // アポメモの中身からも探せるようにする。「あの話をしたのはどのアポだったか」を辿れる。
         return matches(filter.query, [
           customers.find((c) => c.id === m.customerId)?.displayName,
           m.title,
@@ -151,7 +151,7 @@ export default function MeetingsPage() {
   return (
     <div className="page">
       <div className="page-head">
-        <h1 className="page-title">商談を記録</h1>
+        <h1 className="page-title">アポを記録</h1>
         <p className="page-desc">
           メモや文字起こしをそのまま貼り付けてください。記録はチーム全員が閲覧でき、
           AIの振り返りと次回準備に使われます。
@@ -159,10 +159,10 @@ export default function MeetingsPage() {
       </div>
 
       <div className="card">
-        <h2 className="card-title">{editingId ? '商談を編集' : '新しい商談'}</h2>
+        <h2 className="card-title">{editingId ? 'アポを編集' : '新しいアポ'}</h2>
         {customers.length === 0 && (
           <div className="alert alert-warn" style={{ marginBottom: 10 }}>
-            先に「顧客カルテ」で顧客を登録してください。
+            先に「顧客情報」で顧客を登録してください。
           </div>
         )}
         <div className="grid-2" style={{ marginBottom: 10 }}>
@@ -181,11 +181,11 @@ export default function MeetingsPage() {
             </select>
           </label>
           <label className="field">
-            <span>商談日</span>
+            <span>アポの日付</span>
             <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
           </label>
           <label className="field">
-            <span>商談名</span>
+            <span>アポの名称</span>
             <input
               value={form.title}
               placeholder="例：初回ヒアリング"
@@ -193,7 +193,7 @@ export default function MeetingsPage() {
             />
           </label>
           <label className="field">
-            <span>商談段階</span>
+            <span>アポの段階</span>
             <input
               value={form.stage}
               placeholder="例：ヒアリング／提案／クロージング"
@@ -214,7 +214,7 @@ export default function MeetingsPage() {
             </select>
           </label>
           <label className="field">
-            <span>商談結果</span>
+            <span>アポの結果</span>
             <select value={form.outcome} onChange={(e) => setForm({ ...form, outcome: e.target.value })}>
               {OUTCOMES.map((outcome) => (
                 <option key={outcome} value={outcome}>
@@ -226,11 +226,11 @@ export default function MeetingsPage() {
         </div>
 
         <label className="field" style={{ marginBottom: 10 }}>
-          <span>商談メモ・文字起こし</span>
+          <span>アポメモ・文字起こし</span>
           <textarea
             rows={10}
             value={form.rawInput}
-            placeholder={'例）\n顧客：今の勤怠管理はExcelで、締めのたびに総務が3日かかっています。\n担当：それは大変ですね。今の運用でいちばん困っているのはどこですか。'}
+            placeholder={'例）\nお客様：毎月の家計管理が大変で、家計簿も三日坊主で続かなくて。\n担当：そうなんですね。いちばん負担に感じるのはどのあたりですか。'}
             onChange={(e) => setForm({ ...form, rawInput: e.target.value })}
           />
         </label>
@@ -255,7 +255,7 @@ export default function MeetingsPage() {
       <div className="card">
         <div className="spread" style={{ flexWrap: 'wrap', marginBottom: 10 }}>
           <h2 className="card-title" style={{ margin: 0 }}>
-          記録済みの商談（{visible.length}件{visible.length !== meetings.length && ` / 全${meetings.length}件`}）
+          記録済みのアポ（{visible.length}件{visible.length !== meetings.length && ` / 全${meetings.length}件`}）
           </h2>
           <a className="btn btn-sm" href="/api/export?kind=meetings" download>
             CSVで書き出す
@@ -267,7 +267,7 @@ export default function MeetingsPage() {
           <input
             type="search"
             value={filter.query}
-            placeholder="顧客名・商談名・メモの中身から探す"
+            placeholder="顧客名・アポの名称・メモの中身から探す"
             onChange={(e) => setFilter({ ...filter, query: e.target.value })}
           />
         </label>
@@ -287,7 +287,7 @@ export default function MeetingsPage() {
             </select>
           </label>
           <label className="field">
-            <span>商談結果</span>
+            <span>アポの結果</span>
             <select
               value={filter.outcome}
               onChange={(e) => setFilter({ ...filter, outcome: e.target.value })}
@@ -305,8 +305,8 @@ export default function MeetingsPage() {
         {visible.length === 0 ? (
           <div className="empty">
             {meetings.length === 0
-              ? 'まだ商談記録がありません。'
-              : '条件に合う商談がありません。検索語や絞り込みを見直してください。'}
+              ? 'まだアポ記録がありません。'
+              : '条件に合うアポがありません。検索語や絞り込みを見直してください。'}
           </div>
         ) : (
           <table className="cards">
@@ -314,7 +314,7 @@ export default function MeetingsPage() {
               <tr>
                 <th>顧客</th>
                 <th>日付</th>
-                <th>商談</th>
+                <th>アポ</th>
                 <th>担当者</th>
                 <th>段階</th>
                 <th>結果</th>
@@ -334,7 +334,7 @@ export default function MeetingsPage() {
                   <td data-label="日付" className="desktop-cell">
                     {meeting.date}
                   </td>
-                  <td data-label="商談" className="desktop-cell">
+                  <td data-label="アポ" className="desktop-cell">
                     {meeting.title}
                   </td>
                   <td className="owner-tag" data-label="担当者">

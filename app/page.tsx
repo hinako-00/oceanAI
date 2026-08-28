@@ -26,19 +26,19 @@ interface Bootstrap {
  * 入力の手間を減らすための定型文。
  *
  * それだけで質問として成立するものは、押したらそのまま送る（needsInput: false）。
- * 商談メモの貼り付けが前提のものは入力欄に流し込んで続きを書いてもらう。
+ * アポメモの貼り付けが前提のものは入力欄に流し込んで続きを書いてもらう。
  * 全部を「入力欄に入れるだけ」にすると、押しても何も起きないように見える。
  */
 const QUICK_PROMPTS = [
   {
-    label: '商談前の準備',
+    label: 'アポ前の準備',
     needsInput: false,
-    text: '明日の商談前の準備をしたいです。今回の目的、優先して聞くべき質問、想定される反論と返し方、着地点を整理してください。',
+    text: '明日のアポ前の準備をしたいです。今回の目的、優先して聞くべき質問、想定される反論と返し方、着地点を整理してください。',
   },
   {
-    label: '商談の振り返り',
+    label: 'アポの振り返り',
     needsInput: true,
-    text: '今日の商談の振り返りをお願いします。商談メモは以下です。\n\n',
+    text: '今日のアポの振り返りをお願いします。アポメモは以下です。\n\n',
   },
   {
     label: '案件が止まった',
@@ -72,7 +72,7 @@ export default function ChatPage() {
   const [roleplay, setRoleplay] = useState({
     product: '',
     persona: '',
-    stage: '初回商談',
+    stage: '初回アポ',
     difficulty: '標準' as (typeof DIFFICULTIES)[number],
     focus: '',
   });
@@ -92,7 +92,7 @@ export default function ChatPage() {
     reload().catch((err: Error) => setError(err.message));
   }, [reload]);
 
-  // 他画面（商談記録など）からの引き継ぎ入力を取り込む。
+  // 他画面（アポ記録など）からの引き継ぎ入力を取り込む。
   useEffect(() => {
     const raw = sessionStorage.getItem('ocean:prefill');
     if (!raw) return;
@@ -294,7 +294,7 @@ export default function ChatPage() {
       // 完成した回答のように見せない。
       if (finished.truncated) {
         setError(
-          '回答が長くなりすぎて途中で切れました。対象を絞って聞き直すか、商談メモを分割してお試しください。',
+          '回答が長くなりすぎて途中で切れました。対象を絞って聞き直すか、アポメモを分割してお試しください。',
         );
       }
       const bootstrap = await reload();
@@ -319,10 +319,25 @@ export default function ChatPage() {
     setShowRoleplayForm(false);
     setPane('none');
     setMode('F');
-    await send('ロールプレイを開始します。顧客役として最初の一言をお願いします。', {
+    await send('ロールプレイを開始します。お客様役として最初の一言をお願いします。', {
       action: 'start',
       config: roleplay,
     });
+  };
+
+  /** ロープレモードへ。設定が済んでいなければ設定カードを出す。 */
+  const openRoleplay = () => {
+    if (roleplayActive) return;
+    setPane('none');
+    setShowRoleplayForm(true);
+    setError('');
+  };
+
+  /** 対話モードへ。ロープレ中なら終了して講評させる。 */
+  const backToTalk = () => {
+    setShowRoleplayForm(false);
+    setError('');
+    if (roleplayActive) void endRoleplay();
   };
 
   const endRoleplay = async () => {
@@ -337,7 +352,7 @@ export default function ChatPage() {
 
   const useQuickPrompt = (prompt: (typeof QUICK_PROMPTS)[number]) => {
     if (prompt.needsInput) {
-      // 商談メモを貼ってもらう必要があるので、入力欄に入れて続きを書いてもらう。
+      // アポメモを貼ってもらう必要があるので、入力欄に入れて続きを書いてもらう。
       setInput(prompt.text);
       textareaRef.current?.focus();
       return;
@@ -452,8 +467,32 @@ export default function ChatPage() {
         ))}
       </div>
 
+
       {/* 会話本体 */}
       <div className="chat-main">
+        {/* 対話とロープレの切り替え。
+            以前はロールプレイが設定シートの奥にあり、存在に気づけなかった。
+            この相談で何をしているのかが一目で分かるよう、本体の上に置く。 */}
+        <div className="chat-modes" role="group" aria-label="モードの切り替え">
+          <button
+            type="button"
+            className="chat-mode"
+            data-active={!roleplayActive}
+            disabled={busy}
+            onClick={backToTalk}
+          >
+            対話モード
+          </button>
+          <button
+            type="button"
+            className="chat-mode"
+            data-active={roleplayActive}
+            disabled={busy}
+            onClick={openRoleplay}
+          >
+            ロープレモード
+          </button>
+        </div>
         <div className="chat-scroll" ref={scrollRef}>
           <div className="chat-inner">
             {data && !data.hasApiKey && (
@@ -462,11 +501,80 @@ export default function ChatPage() {
               </div>
             )}
 
+            {showRoleplayForm && !roleplayActive && (
+              <div className="card" style={{ borderColor: 'var(--accent)' }}>
+                <h2 className="card-title">ロープレの設定</h2>
+                <p className="muted" style={{ margin: '0 0 12px' }}>
+                  ここで設定した内容でAIがお客様役になります。開始後は指導せず、
+                  お客様として受け答えします。対話モードに戻すと講評します。
+                </p>
+                <div className="stack">
+                  <label className="field">
+                    <span>商材</span>
+                    <input
+                      value={roleplay.product}
+                      onChange={(e) => setRoleplay({ ...roleplay, product: e.target.value })}
+                      placeholder="例：個人向けの家計相談サービス"
+                    />
+                  </label>
+                  <label className="field">
+                    <span>お客様像</span>
+                    <input
+                      value={roleplay.persona}
+                      onChange={(e) => setRoleplay({ ...roleplay, persona: e.target.value })}
+                      placeholder="例：30代・共働き・小学生の子ども2人"
+                    />
+                  </label>
+                  <label className="field">
+                    <span>アポの段階</span>
+                    <input
+                      value={roleplay.stage}
+                      onChange={(e) => setRoleplay({ ...roleplay, stage: e.target.value })}
+                    />
+                  </label>
+                  <label className="field">
+                    <span>難易度</span>
+                    <select
+                      value={roleplay.difficulty}
+                      onChange={(e) =>
+                        setRoleplay({
+                          ...roleplay,
+                          difficulty: e.target.value as (typeof DIFFICULTIES)[number],
+                        })
+                      }
+                    >
+                      {DIFFICULTIES.map((level) => (
+                        <option key={level} value={level}>
+                          {level}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="field">
+                    <span>練習したい項目</span>
+                    <input
+                      value={roleplay.focus}
+                      onChange={(e) => setRoleplay({ ...roleplay, focus: e.target.value })}
+                      placeholder="例：金額の不安への対応"
+                    />
+                  </label>
+                  <div className="page-actions" style={{ marginTop: 0 }}>
+                    <button type="button" className="btn-primary" onClick={startRoleplay} disabled={busy}>
+                      この設定で始める
+                    </button>
+                    <button type="button" onClick={() => setShowRoleplayForm(false)} disabled={busy}>
+                      やめる
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {messages.length === 0 && !streaming && (
               <div className="card">
                 <h2 className="card-title">何を手伝いましょうか</h2>
                 <p className="muted" style={{ margin: '0 0 12px' }}>
-                  商談メモや文字起こしを貼り付ければ振り返りを、これからの商談なら準備を支援します。
+                  アポメモや文字起こしを貼り付ければ振り返りを、これからのアポなら準備を支援します。
                   目的が決まっていない場合はそのまま相談してください。
                 </p>
                 <div className="chips">
@@ -493,7 +601,7 @@ export default function ChatPage() {
                 </div>
               ) : (
                 <div key={message.id} className="msg-ai">
-                  <div className="msg-role">AIコーチ{roleplayActive ? '（顧客役）' : ''}</div>
+                  <div className="msg-role">AIコーチ{roleplayActive ? '（お客様役）' : ''}</div>
                   <div className="bubble">
                     <Formatted text={message.content} />
                   </div>
@@ -537,7 +645,7 @@ export default function ChatPage() {
           <div className="composer-inner">
             {roleplayActive && (
               <div className="spread">
-                <span className="badge badge-rep">ロールプレイ中：AIは顧客役</span>
+                <span className="badge badge-rep">ロールプレイ中：AIはお客様役</span>
                 <button type="button" className="btn-sm" onClick={endRoleplay} disabled={busy}>
                   終了して講評
                 </button>
@@ -549,7 +657,7 @@ export default function ChatPage() {
                 ref={textareaRef}
                 rows={1}
                 value={input}
-                placeholder={roleplayActive ? '顧客への発言を入力' : '商談メモ・相談内容を入力'}
+                placeholder={roleplayActive ? 'お客様への発言を入力' : 'アポメモ・相談内容を入力'}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
                   // PCのキーボード向けのショートカット。スマートフォンでは改行のまま。
@@ -620,80 +728,6 @@ export default function ChatPage() {
             ))}
           </select>
         </label>
-
-        <div className="nav-label" style={{ marginTop: 14 }}>
-          ロールプレイ
-        </div>
-        {!roleplayActive && !showRoleplayForm && (
-          <button type="button" className="btn-block" onClick={() => setShowRoleplayForm(true)}>
-            設定して開始する
-          </button>
-        )}
-        {showRoleplayForm && (
-          <div className="stack" style={{ marginTop: 6 }}>
-            <label className="field">
-              <span>商材</span>
-              <input
-                value={roleplay.product}
-                onChange={(e) => setRoleplay({ ...roleplay, product: e.target.value })}
-                placeholder="例：中小企業向け勤怠管理SaaS"
-              />
-            </label>
-            <label className="field">
-              <span>顧客像</span>
-              <input
-                value={roleplay.persona}
-                onChange={(e) => setRoleplay({ ...roleplay, persona: e.target.value })}
-                placeholder="例：従業員80名の製造業／総務部長"
-              />
-            </label>
-            <label className="field">
-              <span>商談段階</span>
-              <input
-                value={roleplay.stage}
-                onChange={(e) => setRoleplay({ ...roleplay, stage: e.target.value })}
-              />
-            </label>
-            <label className="field">
-              <span>難易度</span>
-              <select
-                value={roleplay.difficulty}
-                onChange={(e) =>
-                  setRoleplay({ ...roleplay, difficulty: e.target.value as (typeof DIFFICULTIES)[number] })
-                }
-              >
-                {DIFFICULTIES.map((level) => (
-                  <option key={level} value={level}>
-                    {level}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
-              <span>練習したい項目</span>
-              <input
-                value={roleplay.focus}
-                onChange={(e) => setRoleplay({ ...roleplay, focus: e.target.value })}
-                placeholder="例：価格の反論対応"
-              />
-            </label>
-            <div className="row">
-              <button type="button" className="btn-primary" onClick={startRoleplay} disabled={busy}>
-                開始
-              </button>
-              <button type="button" onClick={() => setShowRoleplayForm(false)}>
-                やめる
-              </button>
-            </div>
-          </div>
-        )}
-        {roleplayActive && (
-          <div className="faint">
-            {roleplay.product} ／ {roleplay.persona}（難易度：{roleplay.difficulty}）
-            <br />
-            AIは指導せず顧客役に徹します。終了後にフィードバックします。
-          </div>
-        )}
 
         {data && data.pendingProposals.length > 0 && (
           <>

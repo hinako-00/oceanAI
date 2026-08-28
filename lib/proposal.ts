@@ -17,7 +17,7 @@ import type {
 } from './types';
 
 /**
- * 保存候補（顧客カルテ・営業傾向・次回行動・社内知識の更新案）のスキーマと検証。
+ * 保存候補（顧客情報・営業傾向・次回行動・社内知識の更新案）のスキーマと検証。
  *
  * モデルには本文とは別の「ツール呼び出し」として出させる。
  * 以前は本文の末尾に <<<SALES_UPDATE ... >>> という自前のブロックを書かせて
@@ -48,7 +48,7 @@ const SELECTABLE_SOURCES: FactSource[] = ['confirmed', 'rep_report', 'ai_hypothe
 export const SAVE_PROPOSAL_TOOL = {
   name: 'save_proposal',
   description:
-    '商談記録や会話から読み取れた、顧客カルテ・営業傾向・次回行動・社内知識の更新案を登録する。' +
+    'アポ記録や会話から読み取れた、顧客情報・営業傾向・次回行動・社内知識の更新案を登録する。' +
     'ここで渡した内容はまだ保存されず、担当者が画面で1件ずつ確認して承認したものだけが保存される。' +
     '本文の回答を書き終えたあとに呼ぶこと。更新案が何もない場合は呼ばなくてよい。',
   input_schema: {
@@ -56,7 +56,7 @@ export const SAVE_PROPOSAL_TOOL = {
     properties: {
       customerUpdate: {
         type: 'object',
-        description: '顧客カルテの更新案。顧客に関する新情報がなければ fields と openQuestions を空配列にする。',
+        description: '顧客情報の更新案。顧客に関する新情報がなければ fields と openQuestions を空配列にする。',
         properties: {
           customerId: {
             type: 'string',
@@ -111,7 +111,7 @@ export const SAVE_PROPOSAL_TOOL = {
             text: { type: 'string' },
             basis: { type: 'string', description: '判断の根拠。' },
             confidence: { type: 'string', enum: CONFIDENCES },
-            dataCount: { type: 'integer', description: '判断に使った商談・会話の件数。' },
+            dataCount: { type: 'integer', description: '判断に使ったアポ・会話の件数。' },
             neededData: {
               type: 'string',
               description: '判断の確度を上げるために必要な追加データ。なければ空文字。',

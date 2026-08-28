@@ -21,7 +21,7 @@ export const FACT_SOURCE_LABEL: Record<FactSource, string> = {
   unconfirmed: '未確認',
 };
 
-/** 顧客カルテの1項目。 */
+/** 顧客情報の1項目。 */
 export interface CustomerField {
   value: string;
   source: FactSource;
@@ -30,7 +30,7 @@ export interface CustomerField {
   updatedAt: string;
 }
 
-/** 顧客カルテの項目キー（仕様の「顧客情報の整理」に対応）。 */
+/** 顧客情報の項目キー（仕様の「顧客情報の整理」に対応）。 */
 export type CustomerFieldKey =
   | 'customerName'
   | 'companyName'
@@ -53,26 +53,35 @@ export type CustomerFieldKey =
   | 'nextPromise'
   | 'nextAction';
 
+/**
+ * ヒアリング項目の表示名。
+ *
+ * 個人のお客様（toC）向けの営業を前提にした言い回しにしている。
+ * キー（customerName や companyName など）は保存済みデータと結びついているため変えない。
+ * 変えてよいのは表示名だけ。
+ */
 export const CUSTOMER_FIELD_LABEL: Record<CustomerFieldKey, string> = {
-  customerName: '顧客名',
-  companyName: '会社名',
-  demographics: '年齢層・職業・役職',
-  leadSource: '流入経路',
-  currentSituation: '顧客の現状',
-  surfaceRequest: '表面的な要望',
+  customerName: 'お名前',
+  // 個人が相手でも、勤め先や働き方は提案の前提になる（勤務形態・収入の安定性など）。
+  companyName: 'ご職業・勤務先',
+  demographics: '年齢層・家族構成・お住まい',
+  leadSource: '知ったきっかけ（広告・紹介・SNSなど）',
+  currentSituation: '現在の状況',
+  surfaceRequest: '表面的なご要望',
   coreIssue: '本質的な課題',
   idealState: '理想の状態',
-  impactIfIgnored: '課題を放置した場合の影響',
-  triedSolutions: '過去に試した解決方法',
+  impactIfIgnored: 'このままだとどうなるか',
+  triedSolutions: 'これまで試したこと',
   productInterest: '商品・サービスへの関心',
-  concerns: '不安・懸念・反論',
-  budget: '予算',
-  timeline: '導入・購入希望時期',
-  decisionMakers: '意思決定者・相談相手',
-  competitors: '比較対象・競合',
+  concerns: '不安・迷い・反論',
+  budget: 'ご予算・出せる金額',
+  timeline: '購入・開始したい時期',
+  // 個人の購入判断は本人だけで完結しないことが多い（配偶者・親など）。
+  decisionMakers: '相談される相手（ご家族など）',
+  competitors: '比較検討している他社',
   trustLevel: '信頼関係の状態',
-  temperature: '顧客の温度感',
-  nextPromise: '次回の約束',
+  temperature: '検討の温度感',
+  nextPromise: '次回のお約束',
   nextAction: '次回アクション',
 };
 
@@ -90,11 +99,11 @@ export interface Customer {
   updatedAt: string;
 }
 
-/** 商談記録の入力種別。 */
+/** アポ記録の入力種別。 */
 export type MeetingInputType = 'chat' | 'memo' | 'transcript';
 
 export const MEETING_INPUT_TYPE_LABEL: Record<MeetingInputType, string> = {
-  memo: '商談メモ',
+  memo: 'アポメモ',
   transcript: '録音の文字起こし',
   chat: 'チャット・メールのやりとり',
 };
@@ -105,17 +114,17 @@ export interface Meeting {
   id: string;
   customerId: string;
   repId: string;
-  /** 商談日（YYYY-MM-DD）。 */
+  /** アポの日付（YYYY-MM-DD）。 */
   date: string;
   title: string;
-  /** 商談段階（初回接触 / ヒアリング / 提案 / クロージング など）。 */
+  /** アポの段階（初回接触 / ヒアリング / 提案 / クロージング など）。 */
   stage: string;
   inputType: MeetingInputType;
   /** メモ・文字起こしの原文。 */
   rawInput: string;
-  /** 商談結果（受注 / 保留 / 失注 / 継続 など）。 */
+  /** アポの結果（受注 / 保留 / 失注 / 継続 など）。 */
   outcome: string;
-  /** AIの分析結果（商談後の標準出力）。 */
+  /** AIの分析結果（アポ後の標準出力）。 */
   analysis?: string;
   createdAt: string;
 }
@@ -150,7 +159,7 @@ export const SKILL_AXIS_LABEL: Record<SkillAxis, string> = {
   pricing: '価格交渉',
   closing: 'クロージング',
   nextAction: '次回行動の設定',
-  adaptation: '顧客タイプへの適応',
+  adaptation: 'お客様のタイプへの適応',
   compliance: 'コンプライアンス意識',
 };
 
@@ -169,8 +178,8 @@ export const TENDENCY_CATEGORY_LABEL: Record<TendencyCategory, string> = {
   strength: '現在の強み',
   habit: '繰り返している癖',
   improve: '改善すべき行動',
-  goodFit: '得意と考えられる顧客属性',
-  hardFit: '苦手と考えられる顧客属性',
+  goodFit: '得意と考えられるお客様のタイプ',
+  hardFit: '苦手と考えられるお客様のタイプ',
   nextTry: '次回試す具体的な行動',
   change: '前回の改善課題からの変化',
 };
@@ -194,7 +203,7 @@ export interface Tendency {
   /** 判断の根拠。 */
   basis: string;
   confidence: Confidence;
-  /** 分析に使ったデータ数（商談・会話の件数）。 */
+  /** 分析に使ったデータ数（アポ・会話の件数）。 */
   dataCount: number;
   /** 判断に必要な追加データ。 */
   neededData?: string;
@@ -234,7 +243,7 @@ export interface User {
   passwordHash: string;
   name: string;
   role: UserRole;
-  /** 退職・異動時は false にして残す（過去の商談記録との紐付けを壊さないため）。 */
+  /** 退職・異動時は false にして残す（過去のアポ記録との紐付けを壊さないため）。 */
   active: boolean;
   /** 営業経験年数。 */
   experienceYears: number;
@@ -293,12 +302,12 @@ export interface Knowledge {
 export type Mode = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H';
 
 export const MODE_LABEL: Record<Mode, string> = {
-  A: '商談前の準備',
-  B: '商談後の振り返り',
+  A: 'アポ前の準備',
+  B: 'アポ後の振り返り',
   C: '顧客情報の登録・更新',
   D: '営業相談・問題解決',
   E: '営業知識の学習',
-  F: '顧客役とのロールプレイ',
+  F: 'お客様役とのロールプレイ',
   G: '自分の営業傾向の確認',
   H: 'その他',
 };
@@ -310,7 +319,7 @@ export interface RoleplayConfig {
   stage: string;
   difficulty: '易しい' | '標準' | '難しい';
   focus: string;
-  /** true の間はAIは顧客役に徹し、途中で指導しない。 */
+  /** true の間はAIはお客様役に徹し、途中で指導しない。 */
   active: boolean;
 }
 

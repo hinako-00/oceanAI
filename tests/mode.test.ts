@@ -4,8 +4,8 @@ import test from 'node:test';
 import { detectMode, effortFor, makeTitle } from '../lib/mode';
 
 test('入力からモードのラベルを推定する', () => {
-  assert.equal(detectMode('明日の商談前に準備したい'), 'A');
-  assert.equal(detectMode('今日の商談の振り返りをお願いします'), 'B');
+  assert.equal(detectMode('明日のアポ前に準備したい'), 'A');
+  assert.equal(detectMode('今日のアポの振り返りをお願いします'), 'B');
   assert.equal(detectMode('ロープレをしたい'), 'F');
   assert.equal(detectMode('私の傾向を教えて'), 'G');
   assert.equal(detectMode('SPINとは何ですか'), 'E');
@@ -18,7 +18,7 @@ test('見出しは1行目から作り、長い場合は省略する', () => {
 });
 
 test('分析が重いモードだけ推論を深くする', () => {
-  // 商談の振り返り・問題解決・傾向分析は複数の記録を突き合わせる仕事なので深くする。
+  // アポの振り返り・問題解決・傾向分析は複数の記録を突き合わせる仕事なので深くする。
   assert.equal(effortFor('B'), 'xhigh');
   assert.equal(effortFor('D'), 'xhigh');
   assert.equal(effortFor('G'), 'xhigh');

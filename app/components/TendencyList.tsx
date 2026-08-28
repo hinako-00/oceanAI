@@ -35,7 +35,7 @@ export default function TendencyList({
   if (tendencies.length === 0) {
     return (
       <div className="empty">
-        まだ傾向データがありません。商談の振り返りを重ね、保存候補を承認すると蓄積されます。
+        まだ傾向データがありません。アポの振り返りを重ね、保存候補を承認すると蓄積されます。
       </div>
     );
   }

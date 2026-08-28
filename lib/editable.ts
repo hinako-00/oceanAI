@@ -26,7 +26,7 @@ export function pickMeetingPatch(raw: unknown): MeetingPatch {
   const patch: MeetingPatch = {};
 
   if (typeof body.customerId === 'string' && body.customerId) patch.customerId = body.customerId;
-  // 日付が崩れると一覧の並びと商談履歴の順序が壊れるので、形式が合うものだけ通す。
+  // 日付が崩れると一覧の並びとアポ履歴の順序が壊れるので、形式が合うものだけ通す。
   if (typeof body.date === 'string' && DATE_RE.test(body.date)) patch.date = body.date;
   if (typeof body.title === 'string') patch.title = body.title;
   if (typeof body.stage === 'string') patch.stage = body.stage;

@@ -8,7 +8,7 @@ import { matches } from '@/lib/search';
 import { CUSTOMER_FIELD_LABEL, FACT_SOURCE_LABEL } from '@/lib/types';
 import type { Customer, PublicUser } from '@/lib/types';
 
-/** 顧客カルテの一覧。チーム全員の顧客を表示し、担当者で絞り込める。 */
+/** 顧客情報の一覧。チーム全員の顧客を表示し、担当者で絞り込める。 */
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [users, setUsers] = useState<PublicUser[]>([]);
@@ -55,7 +55,7 @@ export default function CustomersPage() {
           ? customers.filter((c) => c.ownerRepId === me?.id)
           : customers.filter((c) => c.ownerRepId === ownerFilter);
     if (!query.trim()) return byOwner;
-    // 会社名だけでなく、課題や未確認事項の文言からも探せるようにする。
+    // お名前だけでなく、課題や未確認事項の文言からも探せるようにする。
     return byOwner.filter((c) =>
       matches(query, [
         c.displayName,
@@ -71,7 +71,7 @@ export default function CustomersPage() {
   return (
     <div className="page">
       <div className="page-head">
-        <h1 className="page-title">顧客カルテ</h1>
+        <h1 className="page-title">顧客情報</h1>
         <p className="page-desc">
           チーム全員で共有します。確認済みの事実・担当者の報告・AIの仮説を区別して記録し、
           情報がない項目は「未確認」のままにします。
@@ -83,7 +83,7 @@ export default function CustomersPage() {
         <div className="row">
           <input
             value={name}
-            placeholder="会社名または顧客名"
+            placeholder="お客様のお名前"
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && create()}
             style={{ flex: '1 1 200px', minWidth: 0 }}
@@ -113,7 +113,7 @@ export default function CustomersPage() {
           <input
             type="search"
             value={query}
-            placeholder="会社名・課題・未確認事項から探す"
+            placeholder="お名前・課題・未確認事項から探す"
             onChange={(e) => setQuery(e.target.value)}
           />
         </label>
