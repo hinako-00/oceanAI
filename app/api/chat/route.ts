@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { buildSystem, getClient, getMaxTokens, getModel, MissingApiKeyError } from '@/lib/anthropic';
+import { describeApiError, logApiError } from '@/lib/api-error';
 import { handleError } from '@/lib/api';
 import { requireUser } from '@/lib/auth';
 import { buildContextBlock } from '@/lib/context';
@@ -251,8 +252,9 @@ export async function POST(request: Request) {
           truncated,
         });
       } catch (err) {
-        const message = err instanceof Error ? err.message : '応答の生成に失敗しました。';
-        send({ type: 'error', message });
+        // 画面には日本語の案内を出し、原因追跡に要る情報はサーバーのログへ残す。
+        logApiError('chat', err);
+        send({ type: 'error', message: describeApiError(err) });
       } finally {
         clearInterval(keepAlive);
         closed = true;
