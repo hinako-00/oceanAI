@@ -9,32 +9,42 @@
   - 公開URL: `https://ocean-ai-sales-coach.netlify.app`
 - GitHub連携済み・デプロイ済みです（ブランチ `claude/ai-sales-coach-app-hs8npk`）。
   以降は `git push` のたびに自動でビルド・デプロイされます。
-- 環境変数を設定済みです: `ANTHROPIC_MODEL`、`ANTHROPIC_MAX_TOKENS`、`ANTHROPIC_API_KEY`、
-  **`STORAGE_DRIVER=blobs`**。
+- 設定されている環境変数は **`ANTHROPIC_API_KEY` だけ**です（2026-08 時点で確認）。
+  他は未設定で、いずれもコード側の既定値・自動判定で正しく動いています。
 
-### `ANTHROPIC_MAX_TOKENS` は消すか 64000 以上にする
+| 変数 | 現在 | 未設定のときの挙動 |
+| --- | --- | --- |
+| `ANTHROPIC_API_KEY` | 設定済み | 未設定だとAIコーチだけが「未設定です」の案内になる（他の機能は動く） |
+| `ANTHROPIC_MODEL` | 未設定 | `claude-opus-5` |
+| `ANTHROPIC_MAX_TOKENS` | 未設定 | `64000`。**未設定のままでよい**（下記） |
+| `STORAGE_DRIVER` | 未設定 | Lambdaランタイム変数から検知して `blobs`（下記） |
 
-このサイトには `ANTHROPIC_MAX_TOKENS` が設定されています。値が小さい（かつての既定値 `8000` など）と、
-コードの既定値を上げても**環境変数のほうが勝つ**ため、商談分析が途中で切れ、
-保存候補（`save_proposal` ツールの呼び出し）が最後まで到達せずに消えます。
+### `ANTHROPIC_MAX_TOKENS` は設定しないこと
 
-Site configuration → Environment variables から、この変数を**削除する**（コードの既定値 64000 が使われる）か、
-`64000` に設定し直してください。応答はストリーミングなので大きくしてもタイムアウトせず、
-課金は実際に生成されたトークン数に対して発生するため、上限を上げても短い回答が高くなることはありません。
+未設定ならコードの既定値 `64000` が使われます。これが正しい状態です。
 
-### `STORAGE_DRIVER=blobs` は必須
+小さい値（かつての既定値 `8000` など）を設定すると**環境変数のほうが勝つ**ため、
+商談分析が途中で切れ、保存候補（`save_proposal` ツールの呼び出し）が最後まで到達せずに消えます。
+応答はストリーミングなので大きくてもタイムアウトせず、課金は実際に生成されたトークン数に
+対して発生するため、上限が高くても短い回答が高くなることはありません。絞る理由がありません。
 
-省略すると、Netlify Functionsの読み取り専用のファイルシステムにJSONファイルを書き込もうとして
-`EROFS: read-only file system` でエラーになります（実際に一度これで初期設定画面が失敗しました）。
+### `STORAGE_DRIVER` は未設定でも動く（明示すればより確実）
 
-当初は環境変数 `NETLIFY`（Netlifyがビルド時に自動設定する）の有無で自動判定するつもりでしたが、
-**Netlify Functionsの実行時には `process.env.NETLIFY` が乗ってこない**ことがあるとわかったため、
-確実な `STORAGE_DRIVER` を明示する方式に変更しています（`lib/storage-driver.ts`）。
-AWS Lambdaのランタイム変数（Netlify Functionsの実体）からの自動検知も保険として追加していますが、
-Netlifyでは `STORAGE_DRIVER=blobs` の明示設定が確実です。
+かつては未設定だと、Netlify Functionsの読み取り専用のファイルシステムにJSONファイルを
+書き込もうとして `EROFS: read-only file system` で失敗していました（実際に一度、初期設定画面が
+これで落ちています）。
 
-**このサイトを作り直す・複製する場合は、この変数を忘れずに設定してください。**
-（Site configuration → Environment variables → `STORAGE_DRIVER` = `blobs`、スコープはAll scopes）
+その後 `lib/storage-driver.ts` に、AWS Lambdaのランタイム自身が注入する環境変数
+（`AWS_LAMBDA_FUNCTION_NAME` / `LAMBDA_TASK_ROOT`）でサーバーレス実行を検知する経路を入れました。
+Netlify Functions の実体はAWS Lambdaなので、**`STORAGE_DRIVER` が未設定でも `blobs` に倒れます**。
+現在のサイトが未設定のまま動いているのはこのためです（`tests/storage-driver.test.ts` で担保）。
+
+`NETLIFY` 変数だけに頼らないのは、Netlify Functionsの実行時に `process.env.NETLIFY` が
+乗ってこないことがあるためです。
+
+判定の優先順位は「`STORAGE_DRIVER` の明示 → Lambdaランタイム変数の検知 → ファイル保存」です。
+明示したほうが判定が1段浅くなって確実なので、サイトを作り直す・複製する場合は
+`STORAGE_DRIVER` = `blobs`（スコープはAll scopes）を設定しておくことを勧めますが、必須ではありません。
 
 ## サイトを新しく作る場合の手順
 
@@ -47,13 +57,14 @@ Netlifyでは `STORAGE_DRIVER=blobs` の明示設定が確実です。
 2. デプロイ元ブランチを指定
    （ビルドコマンドと使用するプラグインは `netlify.toml` に書いてあるので、追加設定は不要です）
 3. **Site configuration → Environment variables** で以下を設定
-   - `STORAGE_DRIVER` = `blobs` **（必須。上記の理由により省略不可）**
+   - `STORAGE_DRIVER` = `blobs` **（推奨。未設定でもLambdaランタイム検知で `blobs` になるが、
+     明示したほうが確実。上記参照）**
    - `ANTHROPIC_API_KEY` = Anthropic Consoleで発行したキー（**任意**。未設定でもデプロイでき、
      AIコーチのチャット・ロールプレイだけが「未設定です」という案内になる。それ以外の機能
      ──ログイン、顧客カルテ、商談記録、メンバー管理、次回行動、自社営業知識──は問題なく
      確認できる。課金はキー設定後に実際にメッセージを送ったときのみ発生する）
-   - `ANTHROPIC_MODEL` / `ANTHROPIC_MAX_TOKENS`（任意。既定値は `claude-opus-5` / `64000`。
-     `ANTHROPIC_MAX_TOKENS` は**設定しないことを推奨**する。下記の注意を参照）
+   - `ANTHROPIC_MODEL`（任意。既定値は `claude-opus-5`）
+   - `ANTHROPIC_MAX_TOKENS` は**設定しないこと**（既定値 `64000` が正しい。上記参照）
 4. **Deploys → Trigger deploy** でビルドを開始
 
 ### Netlify CLIから直接デプロイする場合
@@ -65,8 +76,8 @@ git checkout claude/ai-sales-coach-app-hs8npk
 npm install
 npx netlify login
 npx netlify link --id <サイトID>   # ダッシュボードの Site configuration → General に表示されている
-npx netlify env:set STORAGE_DRIVER blobs
 npx netlify env:set ANTHROPIC_API_KEY sk-ant-...   # 任意
+npx netlify env:set STORAGE_DRIVER blobs           # 任意（未設定でも blobs に倒れる）
 npx netlify deploy --build --prod
 ```
 
