@@ -125,6 +125,80 @@ export default function CustomerDetailPage() {
   if (error) return <div className="page"><div className="alert alert-error">{error}</div></div>;
   if (!customer) return <div className="page"><p className="muted">読み込み中…</p></div>;
 
+  // 埋まっている項目を先に出し、未確認は畳む。20項目を常に全部並べると、
+  // 確認済みの内容が未確認の行に埋もれて読めない。
+  const card = customer;
+  const filledKeys = CUSTOMER_FIELD_KEYS.filter((key) => card.fields[key]?.value);
+  const emptyKeys = CUSTOMER_FIELD_KEYS.filter((key) => !card.fields[key]?.value);
+
+  const renderFieldRow = (key: CustomerFieldKey) => {
+    const field = card.fields[key];
+    const isEditing = editing === key;
+    return (
+      <tr key={key}>
+        <th style={{ width: 168 }}>{CUSTOMER_FIELD_LABEL[key]}</th>
+        <td>
+          {isEditing ? (
+            <div className="stack">
+              <textarea
+                rows={2}
+                value={draft.value}
+                onChange={(e) => setDraft({ ...draft, value: e.target.value })}
+              />
+              <div className="row">
+                <select
+                  value={draft.source}
+                  onChange={(e) => setDraft({ ...draft, source: e.target.value as FactSource })}
+                >
+                  {EDITABLE_SOURCES.map((source) => (
+                    <option key={source} value={source}>
+                      {FACT_SOURCE_LABEL[source]}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  value={draft.evidence}
+                  placeholder="根拠（顧客の発言など）"
+                  onChange={(e) => setDraft({ ...draft, evidence: e.target.value })}
+                />
+              </div>
+              <div className="row">
+                <button type="button" className="btn-primary btn-sm" onClick={saveField}>
+                  保存
+                </button>
+                <button type="button" className="btn-sm" onClick={() => setEditing(null)}>
+                  取消
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="spread" style={{ alignItems: 'flex-start' }}>
+              <div style={{ minWidth: 0 }}>
+                {field?.value ? (
+                  <>
+                    <span className={SOURCE_CLASS[field.source]}>{FACT_SOURCE_LABEL[field.source]}</span>{' '}
+                    {field.value}
+                    {field.evidence && <div className="faint">根拠: {field.evidence}</div>}
+                  </>
+                ) : (
+                  <span className="badge badge-unconfirmed">未確認</span>
+                )}
+              </div>
+              <button
+                type="button"
+                className="btn-sm"
+                style={{ flex: 'none' }}
+                onClick={() => startEdit(key)}
+              >
+                編集
+              </button>
+            </div>
+          )}
+        </td>
+      </tr>
+    );
+  };
+
   return (
     <div className="page">
       <div className="page-head">
@@ -165,80 +239,42 @@ export default function CustomerDetailPage() {
       </div>
 
       <div className="card">
-        <h2 className="card-title">ヒアリング項目</h2>
-        <table className="rows">
-          <tbody>
-            {CUSTOMER_FIELD_KEYS.map((key) => {
-              const field = customer.fields[key];
-              const isEditing = editing === key;
-              return (
-                <tr key={key}>
-                  <th style={{ width: 168 }}>{CUSTOMER_FIELD_LABEL[key]}</th>
-                  <td>
-                    {isEditing ? (
-                      <div className="stack">
-                        <textarea
-                          rows={2}
-                          value={draft.value}
-                          onChange={(e) => setDraft({ ...draft, value: e.target.value })}
-                        />
-                        <div className="row">
-                          <select
-                            value={draft.source}
-                            onChange={(e) => setDraft({ ...draft, source: e.target.value as FactSource })}
-                          >
-                            {EDITABLE_SOURCES.map((source) => (
-                              <option key={source} value={source}>
-                                {FACT_SOURCE_LABEL[source]}
-                              </option>
-                            ))}
-                          </select>
-                          <input
-                            value={draft.evidence}
-                            placeholder="根拠（顧客の発言など）"
-                            onChange={(e) => setDraft({ ...draft, evidence: e.target.value })}
-                          />
-                        </div>
-                        <div className="row">
-                          <button type="button" className="btn-primary btn-sm" onClick={saveField}>
-                            保存
-                          </button>
-                          <button type="button" className="btn-sm" onClick={() => setEditing(null)}>
-                            取消
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="spread" style={{ alignItems: 'flex-start' }}>
-                        <div style={{ minWidth: 0 }}>
-                          {field?.value ? (
-                            <>
-                              <span className={SOURCE_CLASS[field.source]}>
-                                {FACT_SOURCE_LABEL[field.source]}
-                              </span>{' '}
-                              {field.value}
-                              {field.evidence && <div className="faint">根拠: {field.evidence}</div>}
-                            </>
-                          ) : (
-                            <span className="badge badge-unconfirmed">未確認</span>
-                          )}
-                        </div>
-                        <button
-                          type="button"
-                          className="btn-sm"
-                          style={{ flex: 'none' }}
-                          onClick={() => startEdit(key)}
-                        >
-                          編集
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div className="spread" style={{ flexWrap: 'wrap', marginBottom: 10 }}>
+          <h2 className="card-title" style={{ margin: 0 }}>
+            ヒアリング項目
+          </h2>
+          <span className="faint">
+            {filledKeys.length} / {CUSTOMER_FIELD_KEYS.length} 項目 確認済み
+          </span>
+        </div>
+        {/* どこまで埋まっているかを一目で見せる。カルテの完成度が次の商談の準備につながる。 */}
+        <div className="meter" aria-hidden="true">
+          <div
+            className="meter-fill"
+            style={{ width: `${(filledKeys.length / CUSTOMER_FIELD_KEYS.length) * 100}%` }}
+          />
+        </div>
+
+        {filledKeys.length === 0 ? (
+          <div className="empty" style={{ marginTop: 12 }}>
+            まだ確認できた項目がありません。下の「未確認の項目」から埋めるか、
+            商談を記録してAIに整理させてください。
+          </div>
+        ) : (
+          <table className="rows" style={{ marginTop: 12 }}>
+            <tbody>{filledKeys.map(renderFieldRow)}</tbody>
+          </table>
+        )}
+
+        {/* 未確認は数が多く、開いたままだと埋まっている項目が埋もれる。既定では畳んでおく。 */}
+        {emptyKeys.length > 0 && (
+          <details className="disclosure" style={{ marginTop: 14 }}>
+            <summary>未確認の項目（{emptyKeys.length}件）</summary>
+            <table className="rows" style={{ marginTop: 8 }}>
+              <tbody>{emptyKeys.map(renderFieldRow)}</tbody>
+            </table>
+          </details>
+        )}
       </div>
 
       <div className="card">

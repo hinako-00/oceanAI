@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 
 import { handleError } from '@/lib/api';
+import { pickMeetingPatch } from '@/lib/editable';
 import { requireUser } from '@/lib/auth';
 import { deleteMeeting, findMeeting, updateMeeting } from '@/lib/repo';
-import type { Meeting } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,12 +11,17 @@ interface Params {
   params: Promise<{ id: string }>;
 }
 
+/** 商談記録の編集は、その商談を行った本人と管理者だけ（削除と同じ基準）。 */
 export async function PATCH(request: Request, { params }: Params) {
   try {
-    await requireUser();
+    const user = await requireUser();
     const { id } = await params;
-    const body = (await request.json()) as Partial<Omit<Meeting, 'id' | 'createdAt'>>;
-    const updated = await updateMeeting(id, body);
+    const meeting = await findMeeting(id);
+    if (!meeting) return NextResponse.json({ error: '商談が見つかりません。' }, { status: 404 });
+    if (meeting.repId !== user.id && user.role !== 'admin') {
+      return NextResponse.json({ error: '他のメンバーの商談記録は編集できません。' }, { status: 403 });
+    }
+    const updated = await updateMeeting(id, pickMeetingPatch(await request.json()));
     if (!updated) return NextResponse.json({ error: '商談が見つかりません。' }, { status: 404 });
     return NextResponse.json(updated);
   } catch (err) {

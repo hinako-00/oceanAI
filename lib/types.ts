@@ -93,6 +93,14 @@ export interface Customer {
 /** 商談記録の入力種別。 */
 export type MeetingInputType = 'chat' | 'memo' | 'transcript';
 
+export const MEETING_INPUT_TYPE_LABEL: Record<MeetingInputType, string> = {
+  memo: '商談メモ',
+  transcript: '録音の文字起こし',
+  chat: 'チャット・メールのやりとり',
+};
+
+export const MEETING_INPUT_TYPES = Object.keys(MEETING_INPUT_TYPE_LABEL) as MeetingInputType[];
+
 export interface Meeting {
   id: string;
   customerId: string;

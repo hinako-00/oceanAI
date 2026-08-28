@@ -253,11 +253,14 @@ export async function findNextAction(id: string): Promise<NextAction | undefined
   return findById('nextActions', id);
 }
 
-export async function setNextActionDone(id: string, done: boolean): Promise<NextAction | undefined> {
+export async function updateNextAction(
+  id: string,
+  patch: Partial<Omit<NextAction, 'id' | 'createdAt' | 'repId'>>,
+): Promise<NextAction | undefined> {
   return mutate('nextActions', (rows) => {
     const action = rows.find((a) => a.id === id);
     if (!action) return undefined;
-    action.done = done;
+    Object.assign(action, patch);
     return action;
   });
 }

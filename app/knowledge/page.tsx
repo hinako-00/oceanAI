@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { api, jsonBody } from '@/lib/client';
+import { api, jsonBody, patchBody } from '@/lib/client';
+import { matches } from '@/lib/search';
 import { KNOWLEDGE_TYPE_LABEL } from '@/lib/types';
 import type { Knowledge, KnowledgeType, PublicUser } from '@/lib/types';
 
@@ -17,6 +18,9 @@ export default function KnowledgePage() {
   const [users, setUsers] = useState<PublicUser[]>([]);
   const [me, setMe] = useState<PublicUser | null>(null);
   const [error, setError] = useState('');
+  // 編集中の知識ID。null なら新規登録。上のフォームを編集モードに切り替えて使い回す。
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [filter, setFilter] = useState({ query: '', type: 'all' });
   const [form, setForm] = useState({ type: 'product' as KnowledgeType, title: '', body: '', tags: '' });
 
   const load = () => {
@@ -35,21 +39,38 @@ export default function KnowledgePage() {
 
   useEffect(load, []);
 
-  const add = async () => {
+  const startEdit = (item: Knowledge) => {
+    setEditingId(item.id);
+    setForm({ type: item.type, title: item.title, body: item.body, tags: item.tags.join(', ') });
+    setError('');
+    // 編集フォームは画面の上にあるので、そこまで戻す。
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setForm({ ...form, title: '', body: '', tags: '' });
+    setError('');
+  };
+
+  const save = async () => {
+    const payload = {
+      type: form.type,
+      title: form.title,
+      body: form.body,
+      tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
+    };
     try {
-      await api<Knowledge>(
-        '/api/knowledge',
-        jsonBody({
-          type: form.type,
-          title: form.title,
-          body: form.body,
-          tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
-        }),
-      );
+      if (editingId) {
+        await api<Knowledge>(`/api/knowledge/${editingId}`, patchBody(payload));
+      } else {
+        await api<Knowledge>('/api/knowledge', jsonBody(payload));
+      }
+      setEditingId(null);
       setForm({ ...form, title: '', body: '', tags: '' });
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '登録に失敗しました。');
+      setError(err instanceof Error ? err.message : editingId ? '更新に失敗しました。' : '登録に失敗しました。');
     }
   };
 
@@ -64,6 +85,17 @@ export default function KnowledgePage() {
   };
 
   const userName = (id?: string) => (id ? users.find((u) => u.id === id)?.name ?? '（不明）' : '—');
+
+  const visible = useMemo(
+    () =>
+      items.filter((item) => {
+        if (filter.type !== 'all' && item.type !== filter.type) return false;
+        // 本文とタグからも探せるようにする。AIが参照する材料なので、
+        // 何が登録済みかを把握できることが登録の重複を防ぐ。
+        return matches(filter.query, [item.title, item.body, ...item.tags]);
+      }),
+    [items, filter],
+  );
   const canDelete = (item: Knowledge) =>
     !item.createdBy || item.createdBy === me?.id || me?.role === 'admin';
 
@@ -78,7 +110,7 @@ export default function KnowledgePage() {
       </div>
 
       <div className="card">
-        <h2 className="card-title">知識を登録</h2>
+        <h2 className="card-title">{editingId ? '知識を編集' : '知識を登録'}</h2>
         <div className="grid-2" style={{ marginBottom: 10 }}>
           <label className="field">
             <span>種別</span>
@@ -120,23 +152,58 @@ export default function KnowledgePage() {
           />
         </label>
         {error && <div className="alert alert-error" style={{ marginBottom: 10 }}>{error}</div>}
-        <button
-          type="button"
-          className="btn-primary btn-block"
-          onClick={add}
-          disabled={!form.title.trim() || !form.body.trim()}
-        >
-          登録
-        </button>
+        <div className="page-actions" style={{ marginTop: 0 }}>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={save}
+            disabled={!form.title.trim() || !form.body.trim()}
+          >
+            {editingId ? '更新' : '登録'}
+          </button>
+          {editingId && (
+            <button type="button" onClick={cancelEdit}>
+              取消
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="card">
-        <h2 className="card-title">登録済み（{items.length}件）</h2>
-        {items.length === 0 ? (
-          <div className="empty">まだ登録がありません。登録するまでAIは一般的な営業理論で回答します。</div>
+        <h2 className="card-title">
+          登録済み（{visible.length}件{visible.length !== items.length && ` / 全${items.length}件`}）
+        </h2>
+
+        <label className="field" style={{ marginBottom: 10 }}>
+          <span>検索</span>
+          <input
+            type="search"
+            value={filter.query}
+            placeholder="タイトル・本文・タグから探す"
+            onChange={(e) => setFilter({ ...filter, query: e.target.value })}
+          />
+        </label>
+        <label className="field" style={{ marginBottom: 12 }}>
+          <span>種別</span>
+          <select value={filter.type} onChange={(e) => setFilter({ ...filter, type: e.target.value })}>
+            <option value="all">すべて</option>
+            {TYPES.map((type) => (
+              <option key={type} value={type}>
+                {KNOWLEDGE_TYPE_LABEL[type]}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {visible.length === 0 ? (
+          <div className="empty">
+            {items.length === 0
+              ? 'まだ登録がありません。登録するまでAIは一般的な営業理論で回答します。'
+              : '条件に合う知識がありません。検索語や種別の絞り込みを見直してください。'}
+          </div>
         ) : (
           <div className="stack">
-            {items.map((item) => (
+            {visible.map((item) => (
               <details key={item.id} className="disclosure">
                 <summary>
                   <span className="badge">{KNOWLEDGE_TYPE_LABEL[item.type]}</span> {item.title}
@@ -150,14 +217,14 @@ export default function KnowledgePage() {
                     {item.tags.length > 0 && ' ／ '}登録者: {userName(item.createdBy)}
                   </span>
                   {canDelete(item) && (
-                    <button
-                      type="button"
-                      className="btn-danger btn-sm"
-                      style={{ flex: 'none' }}
-                      onClick={() => remove(item.id)}
-                    >
-                      削除
-                    </button>
+                    <span className="row" style={{ flex: 'none', gap: 4 }}>
+                      <button type="button" className="btn-sm" onClick={() => startEdit(item)}>
+                        編集
+                      </button>
+                      <button type="button" className="btn-danger btn-sm" onClick={() => remove(item.id)}>
+                        削除
+                      </button>
+                    </span>
                   )}
                 </div>
               </details>

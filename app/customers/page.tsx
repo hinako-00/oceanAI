@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 import { api, formatDate, jsonBody } from '@/lib/client';
+import { matches } from '@/lib/search';
 import { CUSTOMER_FIELD_LABEL, FACT_SOURCE_LABEL } from '@/lib/types';
 import type { Customer, PublicUser } from '@/lib/types';
 
@@ -14,6 +15,7 @@ export default function CustomersPage() {
   const [me, setMe] = useState<PublicUser | null>(null);
   const [name, setName] = useState('');
   const [ownerFilter, setOwnerFilter] = useState('all');
+  const [query, setQuery] = useState('');
   const [error, setError] = useState('');
 
   const load = () => {
@@ -46,10 +48,25 @@ export default function CustomersPage() {
   const ownerName = (id: string) => users.find((u) => u.id === id)?.name ?? '（不明）';
 
   const visible = useMemo(() => {
-    if (ownerFilter === 'all') return customers;
-    if (ownerFilter === 'mine') return customers.filter((c) => c.ownerRepId === me?.id);
-    return customers.filter((c) => c.ownerRepId === ownerFilter);
-  }, [customers, ownerFilter, me]);
+    const byOwner =
+      ownerFilter === 'all'
+        ? customers
+        : ownerFilter === 'mine'
+          ? customers.filter((c) => c.ownerRepId === me?.id)
+          : customers.filter((c) => c.ownerRepId === ownerFilter);
+    if (!query.trim()) return byOwner;
+    // 会社名だけでなく、課題や未確認事項の文言からも探せるようにする。
+    return byOwner.filter((c) =>
+      matches(query, [
+        c.displayName,
+        c.fields.coreIssue?.value,
+        c.fields.currentSituation?.value,
+        c.fields.surfaceRequest?.value,
+        c.fields.temperature?.value,
+        ...c.openQuestions,
+      ]),
+    );
+  }, [customers, ownerFilter, me, query]);
 
   return (
     <div className="page">
@@ -83,7 +100,23 @@ export default function CustomersPage() {
       {error && <div className="alert alert-error" style={{ marginTop: 12 }}>{error}</div>}
 
       <div className="card">
-        <h2 className="card-title">登録済み（{visible.length}件）</h2>
+        <div className="spread" style={{ flexWrap: 'wrap', marginBottom: 10 }}>
+          <h2 className="card-title" style={{ margin: 0 }}>
+          登録済み（{visible.length}件{visible.length !== customers.length && ` / 全${customers.length}件`}）
+          </h2>
+          <a className="btn btn-sm" href="/api/export?kind=customers" download>
+            CSVで書き出す
+          </a>
+        </div>
+        <label className="field" style={{ marginBottom: 12 }}>
+          <span>検索</span>
+          <input
+            type="search"
+            value={query}
+            placeholder="会社名・課題・未確認事項から探す"
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
         <label className="field" style={{ marginBottom: 12 }}>
           <span>担当者でしぼり込む</span>
           <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)}>
@@ -97,7 +130,11 @@ export default function CustomersPage() {
           </select>
         </label>
         {visible.length === 0 ? (
-          <div className="empty">該当する顧客がありません。</div>
+          <div className="empty">
+            {query.trim() || ownerFilter !== 'all'
+              ? '条件に合う顧客がありません。検索語や担当者の絞り込みを見直してください。'
+              : 'まだ顧客が登録されていません。'}
+          </div>
         ) : (
           <table className="cards">
             <thead>

@@ -13,6 +13,8 @@ export default function ActionsPage() {
   const [me, setMe] = useState<PublicUser | null>(null);
   const [scope, setScope] = useState<'mine' | 'team'>('mine');
   const [error, setError] = useState('');
+  // 編集中の行動ID。null なら新規追加。下のフォームを編集モードに切り替えて使い回す。
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ action: '', purpose: '', due: today(), customerId: '' });
 
   const load = useCallback(() => {
@@ -33,14 +35,36 @@ export default function ActionsPage() {
 
   useEffect(load, [load]);
 
-  const add = async () => {
+  const startEdit = (action: NextAction) => {
+    setEditingId(action.id);
+    setForm({
+      action: action.action,
+      purpose: action.purpose,
+      due: action.due || today(),
+      customerId: action.customerId ?? '',
+    });
+    setError('');
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setForm({ ...form, action: '', purpose: '' });
+    setError('');
+  };
+
+  const save = async () => {
     if (!form.action.trim()) return;
     try {
-      await api<NextAction>('/api/next-actions', jsonBody(form));
+      if (editingId) {
+        await api<NextAction>(`/api/next-actions/${editingId}`, patchBody(form));
+      } else {
+        await api<NextAction>('/api/next-actions', jsonBody(form));
+      }
+      setEditingId(null);
       setForm({ ...form, action: '', purpose: '' });
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '追加に失敗しました。');
+      setError(err instanceof Error ? err.message : editingId ? '更新に失敗しました。' : '追加に失敗しました。');
     }
   };
 
@@ -74,6 +98,12 @@ export default function ActionsPage() {
       <div className="page-head">
         <h1 className="page-title">次回行動</h1>
         <p className="page-desc">担当者・期限・目的をセットで管理します。相談画面で承認した提案もここに入ります。</p>
+      </div>
+
+      <div className="page-actions" style={{ marginTop: 0, marginBottom: 12 }}>
+        <a className="btn btn-sm" href="/api/export?kind=actions" download>
+          CSVで書き出す
+        </a>
       </div>
 
       <div className="tabs">
@@ -112,14 +142,14 @@ export default function ActionsPage() {
                 </div>
               </span>
               {canEdit(action) && (
-                <button
-                  type="button"
-                  className="btn-danger btn-sm"
-                  style={{ flex: 'none' }}
-                  onClick={() => remove(action.id)}
-                >
-                  削除
-                </button>
+                <span className="row" style={{ flex: 'none', gap: 4 }}>
+                  <button type="button" className="btn-sm" onClick={() => startEdit(action)}>
+                    編集
+                  </button>
+                  <button type="button" className="btn-danger btn-sm" onClick={() => remove(action.id)}>
+                    削除
+                  </button>
+                </span>
               )}
             </div>
           ))
@@ -127,7 +157,7 @@ export default function ActionsPage() {
       </div>
 
       <div className="card">
-        <h2 className="card-title">行動を追加</h2>
+        <h2 className="card-title">{editingId ? '行動を編集' : '行動を追加'}</h2>
         <div className="grid-2" style={{ marginBottom: 10 }}>
           <label className="field">
             <span>行動</span>
@@ -162,14 +192,16 @@ export default function ActionsPage() {
           </label>
         </div>
         {error && <div className="alert alert-error" style={{ marginBottom: 10 }}>{error}</div>}
-        <button
-          type="button"
-          className="btn-primary btn-block"
-          onClick={add}
-          disabled={!form.action.trim()}
-        >
-          追加
-        </button>
+        <div className="page-actions" style={{ marginTop: 0 }}>
+          <button type="button" className="btn-primary" onClick={save} disabled={!form.action.trim()}>
+            {editingId ? '更新' : '追加'}
+          </button>
+          {editingId && (
+            <button type="button" onClick={cancelEdit}>
+              取消
+            </button>
+          )}
+        </div>
       </div>
 
       {done.length > 0 && (

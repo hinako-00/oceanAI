@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 
 import { handleError } from '@/lib/api';
+import { pickNextActionPatch } from '@/lib/editable';
 import { requireUser } from '@/lib/auth';
-import { deleteNextAction, findNextAction, setNextActionDone } from '@/lib/repo';
+import { deleteNextAction, findNextAction, updateNextAction } from '@/lib/repo';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +11,7 @@ interface Params {
   params: Promise<{ id: string }>;
 }
 
-/** 完了状態の変更・削除は担当者本人と管理者だけ。 */
+/** 完了状態や内容の変更・削除は担当者本人と管理者だけ。 */
 export async function PATCH(request: Request, { params }: Params) {
   try {
     const user = await requireUser();
@@ -20,8 +21,7 @@ export async function PATCH(request: Request, { params }: Params) {
     if (action.repId !== user.id && user.role !== 'admin') {
       return NextResponse.json({ error: '他のメンバーの行動は変更できません。' }, { status: 403 });
     }
-    const body = (await request.json()) as { done?: boolean };
-    return NextResponse.json(await setNextActionDone(id, Boolean(body.done)));
+    return NextResponse.json(await updateNextAction(id, pickNextActionPatch(await request.json())));
   } catch (err) {
     return handleError(err);
   }

@@ -1120,6 +1120,27 @@ tr:last-child td {
   -webkit-overflow-scrolling: touch;
 }
 
+/* 進捗バー（顧客カルテの埋まり具合など）。 */
+.meter {
+  height: 6px;
+  border-radius: 99px;
+  background: var(--bg-subtle);
+  overflow: hidden;
+}
+
+.meter-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: var(--accent);
+  transition: width 0.25s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meter-fill {
+    transition: none;
+  }
+}
+
 .checkline {
   display: flex;
   align-items: flex-start;

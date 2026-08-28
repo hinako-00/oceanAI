@@ -1,9 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { api, jsonBody, today } from '@/lib/client';
+import { api, jsonBody, patchBody, today } from '@/lib/client';
+import { matches } from '@/lib/search';
 import type { Customer, Meeting, MeetingInputType, PublicUser } from '@/lib/types';
 
 const INPUT_TYPES: Array<{ value: MeetingInputType; label: string }> = [
@@ -23,6 +24,9 @@ export default function MeetingsPage() {
   const [me, setMe] = useState<PublicUser | null>(null);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  // 編集中の商談ID。null なら新規登録。上のフォームを編集モードに切り替えて使い回す。
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [filter, setFilter] = useState({ query: '', customerId: 'all', outcome: 'all' });
   const [form, setForm] = useState({
     customerId: '',
     date: today(),
@@ -51,6 +55,28 @@ export default function MeetingsPage() {
 
   useEffect(load, []);
 
+  const startEdit = (meeting: Meeting) => {
+    setEditingId(meeting.id);
+    setForm({
+      customerId: meeting.customerId,
+      date: meeting.date,
+      title: meeting.title,
+      stage: meeting.stage,
+      outcome: meeting.outcome || '継続',
+      inputType: meeting.inputType,
+      rawInput: meeting.rawInput,
+    });
+    setError('');
+    // 編集フォームは画面の上にあるので、そこまで戻す。
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setForm({ ...form, title: '', stage: '', rawInput: '' });
+    setError('');
+  };
+
   const save = async (thenAnalyze: boolean) => {
     if (!form.customerId) {
       setError('顧客を選択してください。');
@@ -63,7 +89,11 @@ export default function MeetingsPage() {
     setSaving(true);
     setError('');
     try {
-      await api<Meeting>('/api/meetings', jsonBody(form));
+      if (editingId) {
+        await api<Meeting>(`/api/meetings/${editingId}`, patchBody(form));
+      } else {
+        await api<Meeting>('/api/meetings', jsonBody(form));
+      }
       if (thenAnalyze) {
         const label = INPUT_TYPES.find((t) => t.value === form.inputType)?.label ?? '記録';
         sessionStorage.setItem(
@@ -77,6 +107,7 @@ export default function MeetingsPage() {
         router.push('/');
         return;
       }
+      setEditingId(null);
       setForm({ ...form, title: '', stage: '', rawInput: '' });
       load();
     } catch (err) {
@@ -99,6 +130,24 @@ export default function MeetingsPage() {
   const customerName = (id: string) => customers.find((c) => c.id === id)?.displayName ?? '（削除済み）';
   const userName = (id: string) => users.find((u) => u.id === id)?.name ?? '（不明）';
 
+  const visible = useMemo(
+    () =>
+      meetings.filter((m) => {
+        if (filter.customerId !== 'all' && m.customerId !== filter.customerId) return false;
+        if (filter.outcome !== 'all' && m.outcome !== filter.outcome) return false;
+        // 商談メモの中身からも探せるようにする。「あの話をしたのはどの商談だったか」を辿れる。
+        return matches(filter.query, [
+          customers.find((c) => c.id === m.customerId)?.displayName,
+          m.title,
+          m.stage,
+          m.outcome,
+          m.date,
+          m.rawInput,
+        ]);
+      }),
+    [meetings, customers, filter],
+  );
+
   return (
     <div className="page">
       <div className="page-head">
@@ -110,7 +159,7 @@ export default function MeetingsPage() {
       </div>
 
       <div className="card">
-        <h2 className="card-title">新しい商談</h2>
+        <h2 className="card-title">{editingId ? '商談を編集' : '新しい商談'}</h2>
         {customers.length === 0 && (
           <div className="alert alert-warn" style={{ marginBottom: 10 }}>
             先に「顧客カルテ」で顧客を登録してください。
@@ -190,18 +239,75 @@ export default function MeetingsPage() {
 
         <div className="page-actions" style={{ marginTop: 0 }}>
           <button type="button" className="btn-primary" disabled={saving} onClick={() => save(true)}>
-            保存してAIに振り返らせる
+            {editingId ? '更新してAIに振り返らせる' : '保存してAIに振り返らせる'}
           </button>
           <button type="button" disabled={saving} onClick={() => save(false)}>
-            保存だけする
+            {editingId ? '更新だけする' : '保存だけする'}
           </button>
+          {editingId && (
+            <button type="button" disabled={saving} onClick={cancelEdit}>
+              取消
+            </button>
+          )}
         </div>
       </div>
 
       <div className="card">
-        <h2 className="card-title">記録済みの商談（{meetings.length}件）</h2>
-        {meetings.length === 0 ? (
-          <div className="empty">まだ商談記録がありません。</div>
+        <div className="spread" style={{ flexWrap: 'wrap', marginBottom: 10 }}>
+          <h2 className="card-title" style={{ margin: 0 }}>
+          記録済みの商談（{visible.length}件{visible.length !== meetings.length && ` / 全${meetings.length}件`}）
+          </h2>
+          <a className="btn btn-sm" href="/api/export?kind=meetings" download>
+            CSVで書き出す
+          </a>
+        </div>
+
+        <label className="field" style={{ marginBottom: 10 }}>
+          <span>検索</span>
+          <input
+            type="search"
+            value={filter.query}
+            placeholder="顧客名・商談名・メモの中身から探す"
+            onChange={(e) => setFilter({ ...filter, query: e.target.value })}
+          />
+        </label>
+        <div className="grid-2" style={{ marginBottom: 12 }}>
+          <label className="field">
+            <span>顧客</span>
+            <select
+              value={filter.customerId}
+              onChange={(e) => setFilter({ ...filter, customerId: e.target.value })}
+            >
+              <option value="all">すべて</option>
+              {customers.map((customer) => (
+                <option key={customer.id} value={customer.id}>
+                  {customer.displayName}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            <span>商談結果</span>
+            <select
+              value={filter.outcome}
+              onChange={(e) => setFilter({ ...filter, outcome: e.target.value })}
+            >
+              <option value="all">すべて</option>
+              {OUTCOMES.map((outcome) => (
+                <option key={outcome} value={outcome}>
+                  {outcome}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {visible.length === 0 ? (
+          <div className="empty">
+            {meetings.length === 0
+              ? 'まだ商談記録がありません。'
+              : '条件に合う商談がありません。検索語や絞り込みを見直してください。'}
+          </div>
         ) : (
           <table className="cards">
             <thead>
@@ -216,7 +322,7 @@ export default function MeetingsPage() {
               </tr>
             </thead>
             <tbody>
-              {meetings.map((meeting) => (
+              {visible.map((meeting) => (
                 <tr key={meeting.id}>
                   <td data-head="">
                     <strong>{customerName(meeting.customerId)}</strong>
@@ -238,9 +344,19 @@ export default function MeetingsPage() {
                   <td data-label="結果">{meeting.outcome || '—'}</td>
                   <td data-actions="">
                     {(meeting.repId === me?.id || me?.role === 'admin') && (
-                      <button type="button" className="btn-danger btn-sm" onClick={() => remove(meeting.id)}>
-                        削除
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          className="btn-sm"
+                          data-active={editingId === meeting.id}
+                          onClick={() => startEdit(meeting)}
+                        >
+                          編集
+                        </button>
+                        <button type="button" className="btn-danger btn-sm" onClick={() => remove(meeting.id)}>
+                          削除
+                        </button>
+                      </>
                     )}
                   </td>
                 </tr>
