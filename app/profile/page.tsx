@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import ThemePicker from '../components/ThemePicker';
 import TendencyList from '../components/TendencyList';
 import { api, jsonBody, patchBody } from '@/lib/client';
 import { USER_ROLE_LABEL } from '@/lib/types';
@@ -83,6 +84,15 @@ export default function ProfilePage() {
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
+
+      <div className="card">
+        <h2 className="card-title">画面の配色</h2>
+        <p className="faint" style={{ marginTop: 0, marginBottom: 10 }}>
+          ブルーデザインの3案から選べます。選んだ案はこの端末にだけ保存され、チームの他の人の画面は変わりません。
+          端末をダークモードにしている場合は、それぞれの案の暗い配色で表示されます。
+        </p>
+        <ThemePicker />
+      </div>
 
       <div className="card">
         <h2 className="card-title">プロフィール</h2>

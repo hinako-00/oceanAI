@@ -9,74 +9,234 @@
 /* ------------------------------------------------------------
    デザイントークン
    ------------------------------------------------------------ */
-:root {
-  --bg: #f4f7f9;
-  --bg-panel: #ffffff;
-  --bg-subtle: #eef3f7;
-  --bg-input: #ffffff;
-  --bg-overlay: rgba(15, 32, 47, 0.45);
-  --border: #dde5ed;
-  --border-strong: #c4d0dc;
-  --text: #16212c;
-  --text-muted: #57677a;
-  --text-faint: #7f8fa0;
-  --accent: #0d7d8c;
-  --accent-hover: #0a6773;
-  --accent-soft: #e2f2f4;
-  --accent-ink: #ffffff;
-  --danger: #b4342c;
-  --danger-soft: #fbecea;
-  --warn: #8f5a10;
-  --warn-soft: #fdf3e2;
-  --ok: #1f7a45;
-  --ok-soft: #e6f5ec;
+/* 配色は3案を用意し、html[data-theme] で切り替える。
+   既定（属性なし）は案A。案の追加・変更はこのブロックだけで完結させる。
 
-  --shadow-sm: 0 1px 2px rgba(15, 32, 47, 0.06);
-  --shadow: 0 1px 2px rgba(15, 32, 47, 0.05), 0 6px 18px rgba(15, 32, 47, 0.06);
-  --shadow-lg: 0 -8px 32px rgba(15, 32, 47, 0.16);
+   案A ocean … 明るい白地に澄んだ青。標準。文字と余白のコントラストを一番強く取る。
+   案B sky   … 淡い水色寄り。角を大きく丸め、境界を弱めて目の負担を減らす。
+   案C navy  … 濃紺と強い罫線。情報量の多い一覧・表を読むための高コントラスト。 */
+
+/* ---- 案A：Ocean（既定） ---- */
+:root,
+[data-theme='ocean'] {
+  --bg: #f2f6fc;
+  --bg-panel: #ffffff;
+  --bg-subtle: #e7eefa;
+  --bg-input: #ffffff;
+  --bg-overlay: rgba(11, 26, 51, 0.5);
+  /* 押した瞬間に必ず沈む面の色。hover とは別に必ず用意する。 */
+  --press: #d7e3f8;
+  --border: #d7e2f2;
+  --border-strong: #b6c7e3;
+  --text: #101f38;
+  --text-muted: #4a5c78;
+  --text-faint: #6f819e;
+  --accent: #1a5fd0;
+  --accent-hover: #144fb2;
+  --accent-press: #0f3d8b;
+  --accent-soft: #e3ecfd;
+  --accent-soft-strong: #cddefb;
+  --accent-ink: #ffffff;
+  --focus: #1a5fd0;
+  --danger: #b8342a;
+  --danger-soft: #fceceb;
+  --warn: #8a5a09;
+  --warn-soft: #fdf3e0;
+  --ok: #15784a;
+  --ok-soft: #e3f4ec;
+
+  --shadow-sm: 0 1px 2px rgba(16, 31, 56, 0.07);
+  --shadow: 0 1px 2px rgba(16, 31, 56, 0.06), 0 8px 20px rgba(16, 31, 56, 0.08);
+  --shadow-lg: 0 -8px 32px rgba(16, 31, 56, 0.18);
 
   --radius: 14px;
   --radius-sm: 10px;
   --radius-xs: 8px;
+}
 
+/* ---- 案B：Sky ---- */
+[data-theme='sky'] {
+  --bg: #eef4fb;
+  --bg-panel: #ffffff;
+  --bg-subtle: #e3eef8;
+  --bg-input: #ffffff;
+  --bg-overlay: rgba(9, 32, 48, 0.45);
+  --press: #d2e7f6;
+  --border: #d5e3f0;
+  --border-strong: #b2c9de;
+  --text: #16283b;
+  --text-muted: #4c6377;
+  --text-faint: #74899c;
+  --accent: #0a6cb8;
+  --accent-hover: #085b9c;
+  --accent-press: #064a80;
+  --accent-soft: #e0f0fb;
+  --accent-soft-strong: #c6e3f7;
+  --accent-ink: #ffffff;
+  --focus: #0a6cb8;
+  --danger: #b83a35;
+  --danger-soft: #fbedec;
+  --warn: #855610;
+  --warn-soft: #fcf2e3;
+  --ok: #14724a;
+  --ok-soft: #e2f3eb;
+
+  --shadow-sm: 0 1px 2px rgba(9, 32, 48, 0.05);
+  --shadow: 0 2px 4px rgba(9, 32, 48, 0.04), 0 10px 26px rgba(9, 32, 48, 0.07);
+  --shadow-lg: 0 -10px 34px rgba(9, 32, 48, 0.16);
+
+  /* やわらかく見せるため、案Aより角を大きく取る。 */
+  --radius: 18px;
+  --radius-sm: 14px;
+  --radius-xs: 10px;
+}
+
+/* ---- 案C：Navy ---- */
+[data-theme='navy'] {
+  --bg: #e9eef5;
+  --bg-panel: #ffffff;
+  --bg-subtle: #dde5f1;
+  --bg-input: #ffffff;
+  --bg-overlay: rgba(6, 15, 32, 0.55);
+  --press: #c9d7ea;
+  --border: #c6d2e2;
+  --border-strong: #9caec8;
+  --text: #0b1626;
+  --text-muted: #3c4d64;
+  --text-faint: #62738b;
+  --accent: #123a75;
+  --accent-hover: #0d2d5c;
+  --accent-press: #082243;
+  --accent-soft: #dde7f5;
+  --accent-soft-strong: #c1d3ea;
+  --accent-ink: #ffffff;
+  --focus: #123a75;
+  --danger: #a52d24;
+  --danger-soft: #f9e9e7;
+  --warn: #7a4e08;
+  --warn-soft: #fbf0dd;
+  --ok: #106040;
+  --ok-soft: #dff0e7;
+
+  --shadow-sm: 0 1px 1px rgba(6, 15, 32, 0.1);
+  --shadow: 0 1px 2px rgba(6, 15, 32, 0.08), 0 6px 16px rgba(6, 15, 32, 0.1);
+  --shadow-lg: 0 -8px 30px rgba(6, 15, 32, 0.24);
+
+  /* 情報を詰めて読ませるので、角は控えめにして輪郭を立てる。 */
+  --radius: 10px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+}
+
+/* 3案で共通の寸法。 */
+:root {
   /* 画面の高さを組み立てるための寸法。 */
   --topbar-h: 56px;
-  --tabbar-h: 60px;
+  --tabbar-h: 62px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
   /* モバイルで本文の下に確保する余白（ボトムタブの高さ）。PCでは 0 にする。 */
   --bottom-gap: calc(var(--tabbar-h) + var(--safe-bottom));
-  /* 指で押せる最小サイズ。 */
+  /* 指で押せる最小サイズ。iOS/Android のガイドライン下限に合わせる。 */
   --tap: 44px;
 }
 
+/* ------------------------------------------------------------
+   ダークモード。3案それぞれに対の配色を持たせる。
+   :root 側は「案A、または未指定」のときだけ当てたいので、
+   他案を :not() で除外して取り違えを防ぐ。
+   ------------------------------------------------------------ */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0e141a;
-    --bg-panel: #161e26;
-    --bg-subtle: #1d272f;
-    --bg-input: #111920;
-    --bg-overlay: rgba(0, 0, 0, 0.6);
-    --border: #2a3742;
-    --border-strong: #3b4b58;
-    --text: #e6edf3;
-    --text-muted: #a2b2c1;
-    --text-faint: #78899a;
-    --accent: #3fb6c4;
-    --accent-hover: #59c8d5;
-    --accent-soft: #133741;
-    --accent-ink: #04252b;
-    --danger: #ef8079;
-    --danger-soft: #351d1c;
-    --warn: #e0ab5c;
+  :root:not([data-theme='sky']):not([data-theme='navy']) {
+    --bg: #0a1120;
+    --bg-panel: #131d2e;
+    --bg-subtle: #1d2839;
+    --bg-input: #0f1725;
+    --bg-overlay: rgba(0, 0, 0, 0.62);
+    --press: #27344a;
+    --border: #27334a;
+    --border-strong: #3d4d6c;
+    --text: #e8eef8;
+    --text-muted: #a6b5cd;
+    --text-faint: #7e8ea8;
+    --accent: #74abff;
+    --accent-hover: #93c0ff;
+    --accent-press: #b1d2ff;
+    --accent-soft: #16294a;
+    --accent-soft-strong: #1f3a66;
+    --accent-ink: #06172e;
+    --focus: #74abff;
+    --danger: #f08a83;
+    --danger-soft: #341d1c;
+    --warn: #e2ad5e;
     --warn-soft: #33270f;
-    --ok: #62c98d;
-    --ok-soft: #14301f;
+    --ok: #63cb8e;
+    --ok-soft: #12301f;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 8px 20px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 -8px 32px rgba(0, 0, 0, 0.55);
+  }
+
+  [data-theme='sky'] {
+    --bg: #091722;
+    --bg-panel: #122230;
+    --bg-subtle: #1b2d3c;
+    --bg-input: #0d1d29;
+    --bg-overlay: rgba(0, 0, 0, 0.58);
+    --press: #24404f;
+    --border: #253d4e;
+    --border-strong: #3a586e;
+    --text: #e6f0f7;
+    --text-muted: #a2b9ca;
+    --text-faint: #7c94a6;
+    --accent: #5cbaf2;
+    --accent-hover: #82ccf8;
+    --accent-press: #a5dcfb;
+    --accent-soft: #103046;
+    --accent-soft-strong: #17455f;
+    --accent-ink: #04212f;
+    --focus: #5cbaf2;
+    --danger: #f0908a;
+    --danger-soft: #331e1d;
+    --warn: #e0af66;
+    --warn-soft: #312811;
+    --ok: #62cb93;
+    --ok-soft: #113021;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 18px rgba(0, 0, 0, 0.35);
-    --shadow-lg: 0 -8px 32px rgba(0, 0, 0, 0.5);
+    --shadow: 0 2px 4px rgba(0, 0, 0, 0.34), 0 10px 26px rgba(0, 0, 0, 0.36);
+    --shadow-lg: 0 -10px 34px rgba(0, 0, 0, 0.5);
+  }
+
+  [data-theme='navy'] {
+    --bg: #060d17;
+    --bg-panel: #101a2b;
+    --bg-subtle: #1a2639;
+    --bg-input: #0b1523;
+    --bg-overlay: rgba(0, 0, 0, 0.68);
+    --press: #24334d;
+    --border: #2a3950;
+    --border-strong: #46597c;
+    --text: #eef2f9;
+    --text-muted: #aab8ce;
+    --text-faint: #8291a9;
+    --accent: #93b8f6;
+    --accent-hover: #b0cbf9;
+    --accent-press: #c9dcfc;
+    --accent-soft: #142440;
+    --accent-soft-strong: #1d3357;
+    --accent-ink: #06152c;
+    --focus: #93b8f6;
+    --danger: #f2918a;
+    --danger-soft: #331c1a;
+    --warn: #e3b062;
+    --warn-soft: #322710;
+    --ok: #6bcf95;
+    --ok-soft: #10301f;
+    --shadow-sm: 0 1px 1px rgba(0, 0, 0, 0.55);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 16px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 -8px 30px rgba(0, 0, 0, 0.6);
   }
 }
 
@@ -111,8 +271,9 @@ body {
 a {
   color: inherit;
   text-decoration: none;
-  /* タップ時の青い矩形を消す。 */
-  -webkit-tap-highlight-color: transparent;
+  /* 端末既定の青い矩形は目立ちすぎるので、配色に合わせた薄い色に置き換える
+     （消してしまうと、タップしたかどうかが分からなくなる）。 */
+  -webkit-tap-highlight-color: rgba(26, 95, 208, 0.16);
 }
 
 /* ------------------------------------------------------------
@@ -181,22 +342,23 @@ a {
 }
 
 .tab-item {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 3px;
-  padding: 6px 2px;
+  padding: 7px 2px;
   border: none;
   background: transparent;
   border-radius: 0;
   color: var(--text-faint);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: 0.01em;
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
+  min-height: var(--tabbar-h);
 }
 
 .tab-item svg {
@@ -207,10 +369,28 @@ a {
 
 .tab-item[data-active='true'] {
   color: var(--accent);
+  font-weight: 700;
+}
+
+/* 色だけだとどのタブにいるか分かりにくいので、上端に線も出す。 */
+.tab-item[data-active='true']::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 22%;
+  right: 22%;
+  height: 3px;
+  border-radius: 0 0 99px 99px;
+  background: var(--accent);
 }
 
 .tab-item:hover:not(:disabled) {
   background: transparent;
+}
+
+.tab-item:active:not(:disabled) {
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .brand {
@@ -224,10 +404,10 @@ a {
   width: 30px;
   height: 30px;
   border-radius: 9px;
-  background: linear-gradient(135deg, var(--accent), #1b9aa8);
+  background: linear-gradient(140deg, var(--accent), var(--accent-press));
   display: grid;
   place-items: center;
-  color: #fff;
+  color: var(--accent-ink);
   font-weight: 700;
   font-size: 14px;
   flex: none;
@@ -285,7 +465,13 @@ a {
 .nav-item[data-active='true'] {
   background: var(--accent-soft);
   color: var(--accent);
-  font-weight: 600;
+  font-weight: 700;
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.nav-item:active {
+  background: var(--accent-soft-strong);
+  color: var(--accent);
 }
 
 .main {
@@ -412,19 +598,69 @@ button,
   align-items: center;
   justify-content: center;
   gap: 6px;
-  transition: background 0.12s ease, border-color 0.12s ease, opacity 0.12s ease;
-  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease,
+    box-shadow 0.12s ease;
+  /* iOS Safari は要素によっては :active を当ててこないので、
+     タップ時のハイライトを消さずアクセント色で薄く残し、
+     「押した」ことが必ず見えるようにする。 */
+  -webkit-tap-highlight-color: rgba(26, 95, 208, 0.18);
   /* ラベルが長くても潰れないようにする。 */
   white-space: nowrap;
 }
 
-button:hover:not(:disabled),
-.btn:hover {
-  background: var(--bg-subtle);
+/* hover はマウスのある環境だけ。指で触る端末では
+   タップ後に hover が張り付いて「押した色のまま戻らない」ため当てない。 */
+@media (hover: hover) and (pointer: fine) {
+  button:hover:not(:disabled),
+  .btn:hover {
+    background: var(--bg-subtle);
+    border-color: var(--border-strong);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    background: var(--danger-soft);
+    border-color: var(--danger);
+  }
+
+  .btn-icon:hover:not(:disabled) {
+    background: var(--accent-soft);
+    border-color: var(--border-strong);
+    color: var(--accent);
+  }
 }
 
-button:active:not(:disabled) {
-  opacity: 0.75;
+/* 押している間の色。hover とは別に必ず面の色を変える
+   （以前は opacity だけで、触っても変化が分からなかった）。 */
+button:active:not(:disabled),
+.btn:active {
+  background: var(--press);
+  border-color: var(--border-strong);
+}
+
+.btn-primary:active:not(:disabled) {
+  background: var(--accent-press);
+  border-color: var(--accent-press);
+  color: var(--accent-ink);
+}
+
+.btn-danger:active:not(:disabled) {
+  background: var(--danger-soft);
+  border-color: var(--danger);
+}
+
+/* キーボード操作でも今どこにいるか分かるようにする。 */
+button:focus-visible,
+.btn:focus-visible,
+a:focus-visible,
+summary:focus-visible,
+[role='button']:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
 }
 
 button:disabled {
@@ -438,26 +674,18 @@ button:disabled {
   color: var(--accent-ink);
 }
 
-.btn-primary:hover:not(:disabled) {
-  background: var(--accent-hover);
-  border-color: var(--accent-hover);
-}
-
+/* 破壊的な操作。枠を薄く出して「押せる」ことを分かるようにする。 */
 .btn-danger {
   color: var(--danger);
-  border-color: transparent;
+  border-color: color-mix(in srgb, var(--danger) 35%, transparent);
   background: transparent;
-}
-
-.btn-danger:hover:not(:disabled) {
-  background: var(--danger-soft);
 }
 
 /* 小さいボタンでも、指で押す高さは確保する。 */
 .btn-sm {
   padding: 6px 12px;
   font-size: 13px;
-  min-height: 38px;
+  min-height: 40px;
 }
 
 /* 横幅いっぱいに広げるボタン。 */
@@ -465,20 +693,31 @@ button:disabled {
   width: 100%;
 }
 
-/* アイコンだけの丸ボタン。 */
+/* アイコンだけの丸ボタン。
+   横並びの中で潰れないよう flex: none を必ず付ける。
+   以前は幅40pxかつ枠なし・背景が周囲とほぼ同色で、
+   閉じるボタンがどこにあるか分からず押せなかった。 */
 .btn-icon {
-  min-height: 40px;
-  width: 40px;
+  flex: none;
+  min-height: var(--tap);
+  height: var(--tap);
+  width: var(--tap);
   padding: 0;
   border-radius: 50%;
-  border-color: transparent;
-  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  background: var(--bg-panel);
   color: var(--text-muted);
 }
 
+.btn-icon:active:not(:disabled) {
+  background: var(--accent-soft-strong);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .btn-icon svg {
-  width: 20px;
-  height: 20px;
+  width: 21px;
+  height: 21px;
 }
 
 /* ------------------------------------------------------------
@@ -665,10 +904,11 @@ label.field > span {
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
   box-shadow: var(--shadow-lg);
-  padding: 8px calc(14px + var(--safe-right)) calc(16px + var(--safe-bottom))
+  padding: 6px calc(14px + var(--safe-right)) calc(20px + var(--safe-bottom))
     calc(14px + var(--safe-left));
-  max-height: 82dvh;
+  max-height: 86dvh;
   overflow-y: auto;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   animation: sheet-up 0.22s cubic-bezier(0.32, 0.72, 0, 1);
 }
@@ -682,18 +922,44 @@ label.field > span {
   margin: 4px auto 12px;
 }
 
+/* シートの見出し。中身をスクロールしても閉じるボタンが画面から出ないよう、
+   上端に貼り付けておく。 */
 .sheet-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 10px;
+  padding: 2px 0 8px;
+  background: var(--bg-panel);
+}
+
+/* 見出しが長くても閉じるボタンを押し出さない。
+   .mobile-only（display:flex）より詳細度を上げて block に戻す。 */
+.sheet-head .sheet-title {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sheet-title {
   font-size: 15px;
   font-weight: 700;
   margin: 0;
+}
+
+/* 閉じるボタンは常に指1本分を確保し、縮ませない。 */
+.sheet-head .sheet-close {
+  flex: 0 0 var(--tap);
 }
 
 @keyframes sheet-up {
@@ -739,7 +1005,7 @@ label.field > span {
 }
 
 .chat-toolbar-context {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
   font-size: 12.5px;
   color: var(--text-muted);
@@ -785,22 +1051,38 @@ label.field > span {
 }
 
 .chat-mode {
-  min-height: 38px;
+  min-height: 42px;
   padding: 6px 10px;
-  font-size: 13px;
-  border-color: transparent;
+  font-size: 13.5px;
+  border-color: var(--border);
   background: var(--bg-subtle);
   color: var(--text-muted);
+}
+
+.chat-mode:active:not(:disabled) {
+  background: var(--press);
+  border-color: var(--border-strong);
 }
 
 .chat-mode[data-active='true'] {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-ink);
+  font-weight: 700;
 }
 
-.chat-mode[data-active='true']:hover:not(:disabled) {
-  background: var(--accent-hover);
+.chat-mode[data-active='true']:active:not(:disabled) {
+  background: var(--accent-press);
+  border-color: var(--accent-press);
+  color: var(--accent-ink);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .chat-mode[data-active='true']:hover:not(:disabled) {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+    color: var(--accent-ink);
+  }
 }
 
 /* 履歴・設定パネル。モバイルではボトムシートとして出す。 */
@@ -814,10 +1096,11 @@ label.field > span {
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
   box-shadow: var(--shadow-lg);
-  padding: 8px calc(14px + var(--safe-right)) calc(16px + var(--safe-bottom))
+  padding: 6px calc(14px + var(--safe-right)) calc(20px + var(--safe-bottom))
     calc(14px + var(--safe-left));
-  max-height: 82dvh;
+  max-height: 86dvh;
   overflow-y: auto;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   animation: sheet-up 0.22s cubic-bezier(0.32, 0.72, 0, 1);
 }
@@ -930,6 +1213,10 @@ label.field > span {
 
 .session-item:hover {
   background: var(--bg-subtle);
+}
+
+.session-item:active {
+  background: var(--press);
 }
 
 .session-item[data-active='true'] {
@@ -1097,6 +1384,7 @@ tr:last-child td {
     display: flex;
     justify-content: flex-end;
     flex-wrap: wrap;
+    gap: 8px;
     padding-bottom: 10px;
   }
 
@@ -1287,9 +1575,17 @@ details.disclosure > summary {
   color: var(--text);
 }
 
+.tab:active:not(:disabled) {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
 .tab[data-active='true'] {
   color: var(--accent);
   border-bottom-color: var(--accent);
+  border-bottom-width: 3px;
+  font-weight: 700;
+  background: var(--accent-soft);
 }
 
 /* ============================================================
@@ -1326,7 +1622,7 @@ details.disclosure > summary {
   }
 
   body {
-    font-size: 14px;
+    font-size: 14.5px;
   }
 
   .shell {
@@ -1361,15 +1657,23 @@ details.disclosure > summary {
 
   button,
   .btn {
-    min-height: 36px;
-    padding: 6px 14px;
+    min-height: 38px;
+    padding: 7px 15px;
     font-size: 13.5px;
   }
 
   .btn-sm {
-    min-height: 30px;
-    padding: 4px 10px;
+    min-height: 32px;
+    padding: 5px 11px;
     font-size: 12.5px;
+  }
+
+  /* アイコンボタンはPCでも押しやすい大きさを保つ。 */
+  .btn-icon {
+    min-height: 38px;
+    height: 38px;
+    width: 38px;
+    padding: 0;
   }
 
   .page {
@@ -1479,4 +1783,100 @@ details.disclosure > summary {
   .page {
     max-width: 1140px;
   }
+}
+
+/* ------------------------------------------------------------
+   配色の切り替え（案A／案B／案C）
+   ------------------------------------------------------------ */
+.theme-options {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 600px) {
+  .theme-options {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* 1案ぶんのカード。押した／選ばれている状態を枠と背景の両方で示す。 */
+.theme-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 8px;
+  text-align: left;
+  white-space: normal;
+  min-height: 0;
+  padding: 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+  color: var(--text);
+  font-weight: 400;
+}
+
+.theme-option:active:not(:disabled) {
+  background: var(--press);
+  border-color: var(--border-strong);
+}
+
+.theme-option[data-selected='true'] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-option-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+/* 選択済みの丸チェック。色が見えない環境でも記号で分かるようにする。 */
+.theme-option-check {
+  margin-left: auto;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  line-height: 1;
+  color: transparent;
+}
+
+.theme-option[data-selected='true'] .theme-option-check {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* 案ごとの見本。実際のトークンではなく案の色を直接置き、
+   いま選んでいる配色に関係なく3案を並べて比べられるようにする。 */
+.theme-swatch {
+  display: flex;
+  gap: 5px;
+  width: 100%;
+}
+
+.theme-swatch span {
+  flex: 1;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.theme-option-desc {
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--text-muted);
+  font-weight: 400;
 }

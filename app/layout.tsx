@@ -6,8 +6,18 @@ import MobileNav from './components/MobileNav';
 import Sidebar from './components/Sidebar';
 import { getCurrentUser } from '@/lib/auth';
 import { isPublicPath, loginPath, SESSION_COOKIE } from '@/lib/auth-constants';
+import { THEME_KEYS, THEME_STORAGE_KEY } from '@/lib/theme';
 import { toPublicUser } from '@/lib/types';
 import './globals.css';
+
+/**
+ * 配色（ブルーデザイン3案）を最初の描画より前に当てるスクリプト。
+ * これがないと、既定の案で一瞬描いてから選んだ案に切り替わり、画面がちらつく。
+ * localStorage が読めない環境でも既定の配色で表示できるよう握りつぶす。
+ */
+const THEME_BOOTSTRAP = `(function(){try{var k=window.localStorage.getItem(${JSON.stringify(
+  THEME_STORAGE_KEY,
+)});if(${JSON.stringify(THEME_KEYS)}.indexOf(k)>-1){document.documentElement.setAttribute('data-theme',k);}}catch(e){}})();`;
 
 export const metadata: Metadata = {
   title: 'Ocean AI ｜ AI営業コーチ',
@@ -26,7 +36,7 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#161e26' },
+    { media: '(prefers-color-scheme: dark)', color: '#131d2e' },
   ],
 };
 
@@ -49,6 +59,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="ja">
       <body>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
         {user ? (
           <div className="shell">
             {/* PCはサイドバー、モバイルは上部バー＋ボトムタブ。表示の切り替えはCSSで行う。 */}
