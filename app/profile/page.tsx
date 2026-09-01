@@ -88,8 +88,8 @@ export default function ProfilePage() {
       <div className="card">
         <h2 className="card-title">画面の配色</h2>
         <p className="faint" style={{ marginTop: 0, marginBottom: 10 }}>
-          ブルーデザインの3案から選べます。選んだ案はこの端末にだけ保存され、チームの他の人の画面は変わりません。
-          端末をダークモードにしている場合は、それぞれの案の暗い配色で表示されます。
+          3つの配色から選べます。選んだ配色はこの端末にだけ保存され、チームの他の人の画面は変わりません。
+          端末をダークモードにしている場合は、それぞれの暗い配色で表示されます。
         </p>
         <ThemePicker />
       </div>

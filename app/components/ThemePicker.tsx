@@ -50,7 +50,8 @@ export default function ThemePicker() {
             onClick={() => choose(option.key)}
           >
             <span className="theme-option-head">
-              {option.label}　{option.name}
+              {option.name}
+              {option.key === DEFAULT_THEME && <span className="theme-option-flag">既定</span>}
               <span className="theme-option-check" aria-hidden="true">
                 ✓
               </span>

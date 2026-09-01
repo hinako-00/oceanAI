@@ -10,94 +10,21 @@
    デザイントークン
    ------------------------------------------------------------ */
 /* 配色は3案を用意し、html[data-theme] で切り替える。
-   既定（属性なし）は案A。案の追加・変更はこのブロックだけで完結させる。
+   既定（属性なし）は navy。案の追加・変更はこのブロックだけで完結させる。
 
-   案A ocean … 明るい白地に澄んだ青。標準。文字と余白のコントラストを一番強く取る。
-   案B sky   … 淡い水色寄り。角を大きく丸め、境界を弱めて目の負担を減らす。
-   案C navy  … 濃紺と強い罫線。情報量の多い一覧・表を読むための高コントラスト。 */
+   navy （既定） … 濃紺と強い罫線。情報量の多い一覧・表を読むための高コントラスト。
+   ocean         … 明るい白地に澄んだ青。文字と余白のコントラストを一番強く取る。
+   sky           … 淡い水色寄り。角を大きく丸め、境界を弱めて目の負担を減らす。 */
 
-/* ---- 案A：Ocean（既定） ---- */
+/* ---- ディープネイビー（既定） ---- */
 :root,
-[data-theme='ocean'] {
-  --bg: #f2f6fc;
-  --bg-panel: #ffffff;
-  --bg-subtle: #e7eefa;
-  --bg-input: #ffffff;
-  --bg-overlay: rgba(11, 26, 51, 0.5);
-  /* 押した瞬間に必ず沈む面の色。hover とは別に必ず用意する。 */
-  --press: #d7e3f8;
-  --border: #d7e2f2;
-  --border-strong: #b6c7e3;
-  --text: #101f38;
-  --text-muted: #4a5c78;
-  --text-faint: #6f819e;
-  --accent: #1a5fd0;
-  --accent-hover: #144fb2;
-  --accent-press: #0f3d8b;
-  --accent-soft: #e3ecfd;
-  --accent-soft-strong: #cddefb;
-  --accent-ink: #ffffff;
-  --focus: #1a5fd0;
-  --danger: #b8342a;
-  --danger-soft: #fceceb;
-  --warn: #8a5a09;
-  --warn-soft: #fdf3e0;
-  --ok: #15784a;
-  --ok-soft: #e3f4ec;
-
-  --shadow-sm: 0 1px 2px rgba(16, 31, 56, 0.07);
-  --shadow: 0 1px 2px rgba(16, 31, 56, 0.06), 0 8px 20px rgba(16, 31, 56, 0.08);
-  --shadow-lg: 0 -8px 32px rgba(16, 31, 56, 0.18);
-
-  --radius: 14px;
-  --radius-sm: 10px;
-  --radius-xs: 8px;
-}
-
-/* ---- 案B：Sky ---- */
-[data-theme='sky'] {
-  --bg: #eef4fb;
-  --bg-panel: #ffffff;
-  --bg-subtle: #e3eef8;
-  --bg-input: #ffffff;
-  --bg-overlay: rgba(9, 32, 48, 0.45);
-  --press: #d2e7f6;
-  --border: #d5e3f0;
-  --border-strong: #b2c9de;
-  --text: #16283b;
-  --text-muted: #4c6377;
-  --text-faint: #74899c;
-  --accent: #0a6cb8;
-  --accent-hover: #085b9c;
-  --accent-press: #064a80;
-  --accent-soft: #e0f0fb;
-  --accent-soft-strong: #c6e3f7;
-  --accent-ink: #ffffff;
-  --focus: #0a6cb8;
-  --danger: #b83a35;
-  --danger-soft: #fbedec;
-  --warn: #855610;
-  --warn-soft: #fcf2e3;
-  --ok: #14724a;
-  --ok-soft: #e2f3eb;
-
-  --shadow-sm: 0 1px 2px rgba(9, 32, 48, 0.05);
-  --shadow: 0 2px 4px rgba(9, 32, 48, 0.04), 0 10px 26px rgba(9, 32, 48, 0.07);
-  --shadow-lg: 0 -10px 34px rgba(9, 32, 48, 0.16);
-
-  /* やわらかく見せるため、案Aより角を大きく取る。 */
-  --radius: 18px;
-  --radius-sm: 14px;
-  --radius-xs: 10px;
-}
-
-/* ---- 案C：Navy ---- */
 [data-theme='navy'] {
   --bg: #e9eef5;
   --bg-panel: #ffffff;
   --bg-subtle: #dde5f1;
   --bg-input: #ffffff;
   --bg-overlay: rgba(6, 15, 32, 0.55);
+  /* 押した瞬間に必ず沈む面の色。hover とは別に必ず用意する。 */
   --press: #c9d7ea;
   --border: #c6d2e2;
   --border-strong: #9caec8;
@@ -128,6 +55,79 @@
   --radius-xs: 6px;
 }
 
+/* ---- オーシャンブルー ---- */
+[data-theme='ocean'] {
+  --bg: #f2f6fc;
+  --bg-panel: #ffffff;
+  --bg-subtle: #e7eefa;
+  --bg-input: #ffffff;
+  --bg-overlay: rgba(11, 26, 51, 0.5);
+  --press: #d7e3f8;
+  --border: #d7e2f2;
+  --border-strong: #b6c7e3;
+  --text: #101f38;
+  --text-muted: #4a5c78;
+  --text-faint: #6f819e;
+  --accent: #1a5fd0;
+  --accent-hover: #144fb2;
+  --accent-press: #0f3d8b;
+  --accent-soft: #e3ecfd;
+  --accent-soft-strong: #cddefb;
+  --accent-ink: #ffffff;
+  --focus: #1a5fd0;
+  --danger: #b8342a;
+  --danger-soft: #fceceb;
+  --warn: #8a5a09;
+  --warn-soft: #fdf3e0;
+  --ok: #15784a;
+  --ok-soft: #e3f4ec;
+
+  --shadow-sm: 0 1px 2px rgba(16, 31, 56, 0.07);
+  --shadow: 0 1px 2px rgba(16, 31, 56, 0.06), 0 8px 20px rgba(16, 31, 56, 0.08);
+  --shadow-lg: 0 -8px 32px rgba(16, 31, 56, 0.18);
+
+  --radius: 14px;
+  --radius-sm: 10px;
+  --radius-xs: 8px;
+}
+
+/* ---- ソフトスカイ ---- */
+[data-theme='sky'] {
+  --bg: #eef4fb;
+  --bg-panel: #ffffff;
+  --bg-subtle: #e3eef8;
+  --bg-input: #ffffff;
+  --bg-overlay: rgba(9, 32, 48, 0.45);
+  --press: #d2e7f6;
+  --border: #d5e3f0;
+  --border-strong: #b2c9de;
+  --text: #16283b;
+  --text-muted: #4c6377;
+  --text-faint: #74899c;
+  --accent: #0a6cb8;
+  --accent-hover: #085b9c;
+  --accent-press: #064a80;
+  --accent-soft: #e0f0fb;
+  --accent-soft-strong: #c6e3f7;
+  --accent-ink: #ffffff;
+  --focus: #0a6cb8;
+  --danger: #b83a35;
+  --danger-soft: #fbedec;
+  --warn: #855610;
+  --warn-soft: #fcf2e3;
+  --ok: #14724a;
+  --ok-soft: #e2f3eb;
+
+  --shadow-sm: 0 1px 2px rgba(9, 32, 48, 0.05);
+  --shadow: 0 2px 4px rgba(9, 32, 48, 0.04), 0 10px 26px rgba(9, 32, 48, 0.07);
+  --shadow-lg: 0 -10px 34px rgba(9, 32, 48, 0.16);
+
+  /* やわらかく見せるため、既定より角を大きく取る。 */
+  --radius: 18px;
+  --radius-sm: 14px;
+  --radius-xs: 10px;
+}
+
 /* 3案で共通の寸法。 */
 :root {
   /* 画面の高さを組み立てるための寸法。 */
@@ -145,11 +145,41 @@
 
 /* ------------------------------------------------------------
    ダークモード。3案それぞれに対の配色を持たせる。
-   :root 側は「案A、または未指定」のときだけ当てたいので、
+   :root 側は「既定の navy、または未指定」のときだけ当てたいので、
    他案を :not() で除外して取り違えを防ぐ。
    ------------------------------------------------------------ */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme='sky']):not([data-theme='navy']) {
+  :root:not([data-theme='ocean']):not([data-theme='sky']) {
+    --bg: #060d17;
+    --bg-panel: #101a2b;
+    --bg-subtle: #1a2639;
+    --bg-input: #0b1523;
+    --bg-overlay: rgba(0, 0, 0, 0.68);
+    --press: #24334d;
+    --border: #2a3950;
+    --border-strong: #46597c;
+    --text: #eef2f9;
+    --text-muted: #aab8ce;
+    --text-faint: #8291a9;
+    --accent: #93b8f6;
+    --accent-hover: #b0cbf9;
+    --accent-press: #c9dcfc;
+    --accent-soft: #142440;
+    --accent-soft-strong: #1d3357;
+    --accent-ink: #06152c;
+    --focus: #93b8f6;
+    --danger: #f2918a;
+    --danger-soft: #331c1a;
+    --warn: #e3b062;
+    --warn-soft: #322710;
+    --ok: #6bcf95;
+    --ok-soft: #10301f;
+    --shadow-sm: 0 1px 1px rgba(0, 0, 0, 0.55);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 16px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 -8px 30px rgba(0, 0, 0, 0.6);
+  }
+
+  [data-theme='ocean'] {
     --bg: #0a1120;
     --bg-panel: #131d2e;
     --bg-subtle: #1d2839;
@@ -207,36 +237,6 @@
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
     --shadow: 0 2px 4px rgba(0, 0, 0, 0.34), 0 10px 26px rgba(0, 0, 0, 0.36);
     --shadow-lg: 0 -10px 34px rgba(0, 0, 0, 0.5);
-  }
-
-  [data-theme='navy'] {
-    --bg: #060d17;
-    --bg-panel: #101a2b;
-    --bg-subtle: #1a2639;
-    --bg-input: #0b1523;
-    --bg-overlay: rgba(0, 0, 0, 0.68);
-    --press: #24334d;
-    --border: #2a3950;
-    --border-strong: #46597c;
-    --text: #eef2f9;
-    --text-muted: #aab8ce;
-    --text-faint: #8291a9;
-    --accent: #93b8f6;
-    --accent-hover: #b0cbf9;
-    --accent-press: #c9dcfc;
-    --accent-soft: #142440;
-    --accent-soft-strong: #1d3357;
-    --accent-ink: #06152c;
-    --focus: #93b8f6;
-    --danger: #f2918a;
-    --danger-soft: #331c1a;
-    --warn: #e3b062;
-    --warn-soft: #322710;
-    --ok: #6bcf95;
-    --ok-soft: #10301f;
-    --shadow-sm: 0 1px 1px rgba(0, 0, 0, 0.55);
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 16px rgba(0, 0, 0, 0.45);
-    --shadow-lg: 0 -8px 30px rgba(0, 0, 0, 0.6);
   }
 }
 
@@ -1786,7 +1786,7 @@ details.disclosure > summary {
 }
 
 /* ------------------------------------------------------------
-   配色の切り替え（案A／案B／案C）
+   配色の切り替え（ディープネイビー／オーシャンブルー／ソフトスカイ）
    ------------------------------------------------------------ */
 .theme-options {
   display: grid;
@@ -1836,6 +1836,24 @@ details.disclosure > summary {
   width: 100%;
   font-weight: 700;
   font-size: 14px;
+}
+
+/* 既定の配色に付ける小さな札。 */
+.theme-option-flag {
+  flex: none;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+  padding: 0 7px;
+  border-radius: 99px;
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+}
+
+.theme-option[data-selected='true'] .theme-option-flag {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* 選択済みの丸チェック。色が見えない環境でも記号で分かるようにする。 */
