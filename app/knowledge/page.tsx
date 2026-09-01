@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import SaveFlash, { useSaveFlash } from '../components/SaveFlash';
 import { api, jsonBody, patchBody } from '@/lib/client';
 import { matches } from '@/lib/search';
 import { KNOWLEDGE_TYPE_LABEL } from '@/lib/types';
@@ -22,6 +23,7 @@ export default function KnowledgePage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filter, setFilter] = useState({ query: '', type: 'all' });
   const [form, setForm] = useState({ type: 'product' as KnowledgeType, title: '', body: '', tags: '' });
+  const { note, celebrate } = useSaveFlash();
 
   const load = () => {
     Promise.all([
@@ -66,6 +68,7 @@ export default function KnowledgePage() {
       } else {
         await api<Knowledge>('/api/knowledge', jsonBody(payload));
       }
+      celebrate(editingId ? '知識を更新しました' : `${KNOWLEDGE_TYPE_LABEL[payload.type]}を1件ふやしました`);
       setEditingId(null);
       setForm({ ...form, title: '', body: '', tags: '' });
       load();
@@ -99,6 +102,11 @@ export default function KnowledgePage() {
   const canDelete = (item: Knowledge) =>
     !item.createdBy || item.createdBy === me?.id || me?.role === 'admin';
 
+  // 種別ごとの登録数。どの種類が手薄かが分かると、次に何を足せばよいか決めやすい。
+  // 種別に順序はないので色は分けず、1系列として同じ色で並べる。
+  const byType = TYPES.map((type) => ({ type, count: items.filter((i) => i.type === type).length }));
+  const typePeak = Math.max(1, ...byType.map((row) => row.count));
+
   return (
     <div className="page">
       <div className="page-head">
@@ -106,6 +114,35 @@ export default function KnowledgePage() {
         <p className="page-desc">
           登録した商品資料・営業ルール・成功事例は、一般的な営業理論より優先してAIが参照します。
           チーム全員で共有されます。
+        </p>
+      </div>
+
+      <SaveFlash note={note} />
+
+      <div className="card">
+        <div className="spread" style={{ flexWrap: 'wrap', marginBottom: 12 }}>
+          <h2 className="card-title" style={{ margin: 0 }}>
+            たまっている知識
+          </h2>
+          <span className="faint">全{items.length}件</span>
+        </div>
+        <ul className="tally">
+          {byType.map((row) => (
+            <li key={row.type}>
+              <span className="tally-label">{KNOWLEDGE_TYPE_LABEL[row.type]}</span>
+              <span className="tally-track">
+                <span
+                  className="tally-fill"
+                  data-empty={row.count === 0}
+                  style={{ width: `${(row.count / typePeak) * 100}%` }}
+                />
+              </span>
+              <b className="tally-value">{row.count}</b>
+            </li>
+          ))}
+        </ul>
+        <p className="faint" style={{ margin: '10px 0 0' }}>
+          少ない種別ほど、AIが引ける材料が足りていません。まずはそこから足すのが効きます。
         </p>
       </div>
 

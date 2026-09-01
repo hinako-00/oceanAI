@@ -4,8 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Formatted from './components/Formatted';
 import ProposalPanel from './components/ProposalPanel';
+import WeeklyProgress from './components/WeeklyProgress';
 import { IconClose, IconHistory, IconPlus, IconSend, IconSettings } from './components/nav';
 import { api, redirectToLogin, SessionExpiredError } from '@/lib/client';
+import type { ActivityLog } from '@/lib/progress';
 import { MODE_LABEL } from '@/lib/types';
 import type { Customer, Message, Mode, PublicUser, Session, UpdateProposal } from '@/lib/types';
 
@@ -19,6 +21,7 @@ interface Bootstrap {
   customers: Customer[];
   sessions: SessionSummary[];
   pendingProposals: UpdateProposal[];
+  activity: ActivityLog;
   hasApiKey: boolean;
 }
 
@@ -570,6 +573,11 @@ export default function ChatPage() {
               </div>
             )}
 
+            {/* 相談を始める前だけ出す。会話が始まったら本文の邪魔になるので引っ込める。 */}
+            {messages.length === 0 && !streaming && data && !roleplayActive && (
+              <WeeklyProgress activity={data.activity} />
+            )}
+
             {messages.length === 0 && !streaming && (
               <div className="card">
                 <h2 className="card-title">何を手伝いましょうか</h2>
@@ -593,14 +601,24 @@ export default function ChatPage() {
               </div>
             )}
 
-            {messages.map((message) =>
+            {/* 立ち上がりの動きは最後の1件だけに付ける。
+                過去の相談を開いたときに全部が一斉に動くと、目が滑って読めない。 */}
+            {messages.map((message, index) =>
               message.role === 'user' ? (
-                <div key={message.id} className="msg-user">
+                <div
+                  key={message.id}
+                  className="msg-user"
+                  data-fresh={index === messages.length - 1}
+                >
                   <div className="msg-role">担当者</div>
                   <div className="bubble">{message.content}</div>
                 </div>
               ) : (
-                <div key={message.id} className="msg-ai">
+                <div
+                  key={message.id}
+                  className="msg-ai"
+                  data-fresh={index === messages.length - 1}
+                >
                   <div className="msg-role">AIコーチ{roleplayActive ? '（クライアント役）' : ''}</div>
                   <div className="bubble">
                     <Formatted text={message.content} />

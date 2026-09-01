@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import SaveFlash, { useSaveFlash } from '../components/SaveFlash';
 import ThemePicker from '../components/ThemePicker';
 import TendencyList from '../components/TendencyList';
 import { api, jsonBody, patchBody } from '@/lib/client';
@@ -19,6 +20,7 @@ export default function ProfilePage() {
   const [password, setPassword] = useState({ current: '', next: '', confirm: '' });
   const [passwordMessage, setPasswordMessage] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const { note, celebrate } = useSaveFlash();
 
   const load = () => {
     api<PublicUser>('/api/me')
@@ -40,6 +42,7 @@ export default function ProfilePage() {
   const save = async () => {
     try {
       await api<PublicUser>('/api/me', patchBody(form));
+      celebrate('プロフィールを保存しました');
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
       load();
@@ -59,6 +62,7 @@ export default function ProfilePage() {
     try {
       await api('/api/me/password', jsonBody({ current: password.current, next: password.next }));
       setPassword({ current: '', next: '', confirm: '' });
+      celebrate('パスワードを変更しました');
       setPasswordMessage('パスワードを変更しました。他の端末のログインは無効になりました。');
     } catch (err) {
       setPasswordError(err instanceof Error ? err.message : '変更に失敗しました。');
@@ -82,6 +86,8 @@ export default function ProfilePage() {
           営業傾向はチームのメンバーも閲覧できます。
         </p>
       </div>
+
+      <SaveFlash note={note} />
 
       {error && <div className="alert alert-error">{error}</div>}
 

@@ -3,6 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
+import Coverage from '../../components/Coverage';
 import { api, formatDate, patchBody } from '@/lib/client';
 import {
   CUSTOMER_FIELD_HINT,
@@ -261,24 +262,17 @@ export default function CustomerDetailPage() {
       </div>
 
       <div className="card">
-        <div className="spread" style={{ flexWrap: 'wrap', marginBottom: 10 }}>
-          <h2 className="card-title" style={{ margin: 0 }}>
-            ヒアリング項目
-          </h2>
-          <span className="faint">
-            {filledKeys.length} / {CUSTOMER_FIELD_KEYS.length} 項目 確認済み
-          </span>
-        </div>
-        {/* どこまで埋まっているかを一目で見せる。カルテの完成度が次のアポの準備につながる。 */}
-        <div className="meter" aria-hidden="true">
-          <div
-            className="meter-fill"
-            style={{ width: `${(filledKeys.length / CUSTOMER_FIELD_KEYS.length) * 100}%` }}
-          />
-        </div>
+        <h2 className="card-title" style={{ marginTop: 0 }}>
+          ヒアリング項目
+        </h2>
+        {/* どこまで確かめられたかを一目で見せる。カルテの状態が次のアポの準備につながる。
+            以前は「値が入っている項目数」を確認済みとして数えていたが、
+            それだとAIの仮説だけで埋まったカルテが「確認済み」に見えてしまう。
+            情報源ごとに分けて数える。 */}
+        <Coverage customer={card} />
 
         {filledKeys.length === 0 ? (
-          <div className="empty" style={{ marginTop: 12 }}>
+          <div className="empty" style={{ marginTop: 14 }}>
             まだ確認できた項目がありません。下の「未確認の項目」から埋めるか、
             アポを記録してAIに整理させてください。
           </div>

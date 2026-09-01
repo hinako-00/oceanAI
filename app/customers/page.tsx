@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
+import { CoverageMini } from '../components/Coverage';
 import { api, formatDate, jsonBody } from '@/lib/client';
 import { matches } from '@/lib/search';
 import { CUSTOMER_FIELD_LABEL, FACT_SOURCE_LABEL } from '@/lib/types';
@@ -144,6 +145,7 @@ export default function CustomersPage() {
                 <th>担当者</th>
                 <th>{CUSTOMER_FIELD_LABEL.industry}</th>
                 <th>{CUSTOMER_FIELD_LABEL.result}</th>
+                <th>確認できた項目</th>
                 <th>未確認</th>
                 <th>更新</th>
               </tr>
@@ -175,6 +177,10 @@ export default function CustomersPage() {
                     </td>
                     <td data-label={CUSTOMER_FIELD_LABEL.result}>
                       {result?.value ?? <span className="badge badge-unconfirmed">未確認</span>}
+                    </td>
+                    {/* どのカルテが育っていて、どれが手つかずかを一覧のまま見分けられるようにする。 */}
+                    <td data-label="確認できた項目">
+                      <CoverageMini customer={customer} />
                     </td>
                     <td data-label="未確認">{customer.openQuestions.length}件</td>
                     <td className="faint" data-label="更新">{formatDate(customer.updatedAt)}</td>

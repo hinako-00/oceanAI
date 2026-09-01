@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import { api, jsonBody } from '@/lib/client';
+import { tap } from '@/lib/haptics';
 import {
   CUSTOMER_FIELD_LABEL,
   FACT_SOURCE_LABEL,
@@ -43,6 +44,8 @@ export default function ProposalPanel({ proposal, customers, currentCustomerId, 
     customerUpdate?.customerId ?? currentCustomerId ?? '',
   );
   const [busy, setBusy] = useState(false);
+  // 保存が通ってからパネルが消えるまでの短い状態。何件がどこへ入ったかを見せる。
+  const [done, setDone] = useState(false);
   const [error, setError] = useState('');
 
   const toggle = (list: number[], setList: (v: number[]) => void, index: number) => {
@@ -81,6 +84,12 @@ export default function ProposalPanel({ proposal, customers, currentCustomerId, 
               : undefined,
         }),
       );
+      // 承認が効いたことを、消える前のひと呼吸で見せる。
+      if (action === 'apply') {
+        tap();
+        setDone(true);
+        await new Promise((resolve) => setTimeout(resolve, 420));
+      }
       onResolved({ status: action === 'apply' ? 'applied' : 'rejected', customerId: targetCustomerId });
     } catch (err) {
       setError(err instanceof Error ? err.message : '保存に失敗しました。');
@@ -88,6 +97,21 @@ export default function ProposalPanel({ proposal, customers, currentCustomerId, 
       setBusy(false);
     }
   };
+
+  if (done) {
+    return (
+      <div className="card proposal-done" role="status">
+        <svg className="save-flash-mark" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M7.5 12.4l3.2 3.2 6-6.4" />
+        </svg>
+        <div>
+          <strong>{selectedCount}件を保存しました</strong>
+          <div className="faint">クライアント情報・営業傾向・次回行動に反映しました。</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="card" style={{ borderColor: 'var(--accent)' }}>
